@@ -1,7 +1,64 @@
 ---
 # vars file for netbox
 netbox_data_models:
+  - name: netbox.netbox.netbox_custom_field_choice_set
+    permission: extras.customfieldchoiceset
+    lookup: custom-field-choice-sets
+    primary_key: name
+    data: custom_field_choice_sets
+    var_prefix: netbox_custom_field_choice_sets_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      base_choices: base_choices
+      description: description
+      extra_choices: extra_choices
+      order_alphabetically: order_alphabetically
+    default_param:
+      description: ""
+      order_alphabetically: false
+
+  - name: netbox.netbox.netbox_custom_field
+    permission: extras.customfield
+    lookup: custom-fields
+    primary_key: name
+    data: custom_fields
+    var_prefix: netbox_custom_fields_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      choice_set: choice_set.name
+      content_types: content_types
+      default: default
+      description: description
+      filter_logic: filter_logic.value
+      group_name: group_name
+      label: label
+      object_type: object_type
+      object_types: object_types
+      related_object_type: related_object_type
+      required: required
+      search_weight: search_weight
+      type: type.value
+      ui_visibility: ui_visibility
+      validation_maximum: validation_maximum
+      validation_minimum: validation_minimum
+      validation_regex: validation_regex
+      weight: weight
+    default_param:
+      description: ""
+      filter_logic: loose
+      group_name: ""
+      label: ""
+      required: false
+      search_weight: 1000
+      validation_regex: ""
+      weight: 100
+
   - name: netbox.netbox.netbox_site
+    permission: dcim.site
     lookup: sites
     primary_key: name
     data: sites
@@ -39,7 +96,122 @@ netbox_data_models:
       physical_address: ""
       shipping_address: ""
 
+  - name: netbox.netbox.netbox_contact_role
+    permission: tenancy.contactrole
+    lookup: contact-roles
+    primary_key: name
+    data: contact_roles
+    var_prefix: netbox_contact_roles_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      slug: slug
+      tags: tags
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_contact_group
+    permission: tenancy.contactgroup
+    lookup: contact-groups
+    primary_key: name
+    data: contact_groups
+    var_prefix: netbox_contact_groups_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      parent_contact_group: parent_contact_group
+      slug: slug
+      tags: tags
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_tenant_group
+    permission: tenancy.tenantgroup
+    lookup: tenant-groups
+    primary_key: name
+    data: tenant_groups
+    var_prefix: netbox_tenant_groups_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      parent_tenant_group: parent_tenant_group
+      slug: slug
+      tags: tags
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_tenant
+    permission: tenancy.tenant
+    lookup: tenants
+    primary_key: name
+    data: tenants
+    var_prefix: netbox_tenants_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      slug: slug
+      tags: tags
+      tenant_grouo: tenant_group
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_contact
+    permission: 
+      - tenancy.contact
+      - tenancy.contactassignment
+    lookup: contacts
+    primary_key: name
+    data: contacts
+    var_prefix: netbox_contacts_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      address: address
+      comments: comments
+      # Something seems broken upstrem when setting contact_group
+      contact_group: group.name
+      custom_fields: custom_fields
+      description: description
+      email: email
+      link: link
+      phone: phone
+      tags: tags
+      title: title
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      address: ""
+      link: ""
+      phone: ""
+      title: ""
+
   - name: netbox.netbox.netbox_location
+    permission: dcim.location
     lookup: locations
     primary_key: name
     data: locations
@@ -66,6 +238,7 @@ netbox_data_models:
       site: "{{ netbox_default_site }}"
 
   - name: netbox.netbox.netbox_device_role
+    permission: dcim.devicerole
     lookup: device-roles
     primary_key: name
     data: device_roles
@@ -88,6 +261,7 @@ netbox_data_models:
       color: 9e9e9e
 
   - name: netbox.netbox.netbox_manufacturer
+    permission: dcim.manufacturer
     lookup: manufacturers
     primary_key: name
     data: manufacturers
@@ -106,6 +280,7 @@ netbox_data_models:
       custom_fields: {}
 
   - name: netbox.netbox.netbox_platform
+    permission: dcim.platform
     lookup: platforms
     primary_key: name
     data: platforms
@@ -128,11 +303,12 @@ netbox_data_models:
       custom_fields: {}
 
   - name: netbox.netbox.netbox_device_type
+    permission: dcim.devicetype
     lookup: device-types
     primary_key: model
     data: device_types
     var_prefix: netbox_device_types_
-    aggregation: "{{ netbox_device_types }}"
+    aggregation: "{{ netbox_sites }}"
     req_param:
       model: model
     opt_param:
@@ -159,6 +335,7 @@ netbox_data_models:
       u_height: 1.0
 
   - name: netbox.netbox.netbox_device
+    permission: dcim.device
     lookup: devices
     primary_key: name
     data: devices
@@ -203,11 +380,14 @@ netbox_data_models:
         Firmware: null
         NetworkVersion: 2
         webmanagement: null
+        SupplierOrder: null
+        SupplierWebpage: null
         OpenVSwitchProtocols:
           - none
       site: "{{ netbox_default_site }}"
 
   - name: netbox.netbox.netbox_device_interface
+    permission: dcim.interface
     lookup: interfaces
     primary_key: device.name-name
     data: device_interfaces
@@ -235,7 +415,7 @@ netbox_data_models:
       mgmt_only: mgmt_only
       mode: mode.value
       mtu: mtu
-      parent_interface: parent_interface
+      parent_interface: parent.name
       poe_mode: poe_mode
       poe_type: poe_type
       primary_mac_address: mac_address
@@ -271,6 +451,7 @@ netbox_data_models:
           #        mac_addresses: mac_address
 
   - name: netbox.netbox.netbox_mac_address
+    permission: dcim.macaddress
     lookup: mac
     primary_key: mac_address
     data: mac_addresses
@@ -298,7 +479,98 @@ netbox_data_models:
         #        device: devices
         #        name: interfaces
 
+  - name: netbox.netbox.netbox_cluster_type
+    permission: virtualization.clustertype
+    lookup: cluster-types
+    primary_key: name
+    data: cluster_types
+    var_prefix: netbox_cluster_types_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      slug: slug
+      tags: tags
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_cluster_group
+    permission: virtualization.clustergroup
+    lookup: cluster-groups
+    primary_key: name
+    data: cluster_groups
+    var_prefix: netbox_cluster_groups_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      slug: slug
+      tags: tags
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_cluster
+    permission: virtualization.cluster
+    lookup: clusters
+    primary_key: name
+    data: clusters
+    var_prefix: netbox_clusters_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      cluster_group: group.name
+      cluster_type: type.name
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      scope: scope
+      scope_type: scope_type
+      site: site.name
+      status: status.value
+      tags: tags
+      tenant: tenant
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      status: active
+
+  - name: netbox.netbox.netbox_fhrp_group
+    permission: ipam.fhrpgroup
+    lookup: fhrp-groups
+    primary_key: group_id
+    data: fhrp-groups
+    var_prefix: netbox_fhrp_groups_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      group_id: group_id
+    opt_param:
+      auth_key: auth_key
+      auth_type: auth_type
+      custom_fields: custom_fields
+      description: description
+      name: name
+      protocol: protocol
+      tags: tags
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+      auth_key: ""
+      name: ""
+
   - name: netbox.netbox.netbox_power_port
+    permission: dcim.powerport
     lookup: power-ports
     primary_key: device.name-name
     data: power_ports
@@ -320,6 +592,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_module_bay
+    permission: dcim.modulebay
     lookup: module-bays
     primary_key: device.name-name
     data: module_bays
@@ -342,6 +615,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_module_type
+    permission: dcim.moduletype
     lookup: module-types
     primary_key: model
     data: module_types
@@ -364,6 +638,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_module
+    permission: dcim.module
     lookup: modules
     primary_key: device.name-module_bay.name-module_type.model
     data: modules
@@ -391,7 +666,61 @@ netbox_data_models:
       serial: ""
       status: "active"
 
+  - name: netbox.netbox.netbox_console_port
+    permission: dcim.consoleport
+    lookup: console-ports
+    primary_key: device.name-name
+    data: console_ports
+    var_prefix: netbox_console_ports_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+      device: device.name
+    opt_param:
+      cable: cable
+      custom_fields: custom_fields
+      description: description
+      label: label
+      mark_connected: mark_connected
+      module: module
+      speed: speed
+      tags: tags
+      type:  type.value
+    default_param:
+      custom_fields: {}
+      description: ""
+      label: ""
+      tags: []
+      mark_connected: false
+
+  - name: netbox.netbox.netbox_console_server_port
+    permission: dcim.consoleserverport
+    lookup: console-server-ports
+    primary_key: device.name-name
+    data: console_server_ports
+    var_prefix: netbox_console_server_ports_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+      device: device.name
+    opt_param:
+      cable: cable
+      custom_fields: custom_fields
+      description: description
+      label: label
+      mark_connected: mark_connected
+      speed: speed
+      tags: tags
+      type:  type.value
+    default_param:
+      custom_fields: {}
+      description: ""
+      label: ""
+      tags: []
+      mark_connected: false
+
   - name: netbox.netbox.netbox_vrf
+    permission: ipam.vrf
     lookup: vrfs
     primary_key: name
     data: vrfs
@@ -419,6 +748,7 @@ netbox_data_models:
       import_targets: []
 
   - name: netbox.netbox.netbox_ip_address
+    permission: ipam.ipaddress
     lookup: ip-addresses
     primary_key: address
     data: ip_addresses
@@ -452,6 +782,7 @@ netbox_data_models:
       dns_name: ""
 
   - name: netbox.netbox.netbox_prefix
+    permission: ipam.prefix
     lookup: prefixes
     primary_key: prefix
     data: prefixes
@@ -485,8 +816,36 @@ netbox_data_models:
       is_pool: false
       mark_utilized: false
       family: 4
+      vlan:
+        site: "{{ netbox_default_site }}"
+
+  - name: netbox.netbox.netbox_vlan_group
+    permission: ipam.vlangroup
+    lookup: vlan-groups
+    primary_key: name
+    data: vlan_groups
+    var_prefix: netbox_vlan_groups_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      max_vid: max_vid
+      min_vid: min_vid
+      scope: scope.name
+      scope_type: scope_type
+      site: site.name
+      slug: slug
+      tags: tags
+      vid_ranges: vid_ranges
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
 
   - name: netbox.netbox.netbox_vlan
+    permission: ipam.vlan
     lookup: vlans
     primary_key: name
     data: vlans
@@ -512,8 +871,41 @@ netbox_data_models:
       tags: []
       status: active
 
+  - name: netbox.netbox.netbox_wireless_lan
+    permission: wireless.wirelesslan
+    lookup: wireless-lans
+    primary_key: ssid
+    data: wireless_lans
+    var_prefix: netbox_wireless_lans_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      ssid: ssid
+    opt_param:
+      auth_cipher: auth_cipher.value
+      auth_psk: auth_psk
+      auth_type: auth_type.value
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      status: status.value
+      tags: tags
+      vlan: 
+        name: vlan.name
+      wireless_lan_group: wireless_lan_group
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      status: active
+      auth_cipher: aes
+      auth_type: wpa-personal
+      vlan:
+        site: "{{ netbox_default_site }}"
+
 # requires pynetbox 7.4.1
 #  - name: netbox.netbox.netbox_cable
+#    permission: dcim.cable
 #    lookup: cables
 #    primary_key: a_terminations.list.device.name-a_terminations.list.name-b_terminations.list.device.name-b_terminations.list.name
 #    data: cables

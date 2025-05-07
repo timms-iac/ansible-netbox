@@ -1,17 +1,17 @@
 ---
-    - name: "Include all .yaml and .yml files from {{ netbox_data_dir }}"
-      ansible.builtin.include_vars:
-        dir: "{{ netbox_data_dir }}-test"
-        ignore_unknown_extensions: true
-        extensions:
-           - 'yaml'
-           - 'yml'
-      tags:
-        - device
-
+#    - name: "Include all .yaml and .yml files from {{ netbox_data_dir }}"
+#      ansible.builtin.include_vars:
+#        dir: "{{ netbox_data_dir }}"
+#        ignore_unknown_extensions: true
+#        extensions:
+#           - 'yaml'
+#           - 'yml'
+#      tags:
+#        - device
+#
     - name: "Some vars from {{ netbox_data_dir }}"
       ansible.builtin.debug:
-        var: query("netbox.netbox.nb_lookup", "vlans", api_endpoint=ansible_nb_url,token=netbox_ansible_token)
+        var: query("netbox.netbox.nb_lookup", "interfaces", api_endpoint=ansible_nb_url,token=netbox_ansible_token)
       tags:
         - device
 
@@ -107,6 +107,8 @@
           {% set _ = output[primary_key][op].update( { opm: qr.value[params[0]][params[1]] } ) %}
           {% if op == "untagged_vlan" %}
           {% set _ = output[primary_key][op].update( { "site": netbox_default_site } ) %}
+          {% elif op == "vlan" %}
+          {% set _ = output[primary_key][op].update( { "site": netbox_default_site } ) %}
           {% endif %}{# if op == "untagged_vlan"#}
           {% endif %}{# if params | length > 2 #}
           {% endif %}{# if qr.value[params[0]] is defined #}
@@ -164,6 +166,9 @@
           {% if data.tagged_vlans is defined %}
           {% set tmp = data.tagged_vlans | sort(attribute="name") %}
           {% set _ = data.update({ "tagged_vlans": tmp }) %}
+          {% for tv in data.tagged_vlans %}
+          {% set _ = tv.update({ "site": netbox_default_site }) %}
+          {% endfor %}
           {% endif %}
           {% if data.primary_mac_address is defined %}
           {% set _ = data.update({ "mac_address": data.primary_mac_address }) %}
@@ -249,6 +254,7 @@
         {% endfor %}
         {% endfor %}
         {{ output }}
+        #      no_log: true
       register: netbox_diff
       tags:
         - device
@@ -296,14 +302,15 @@
     - name: "Write tasks file"
       ansible.builtin.template:
         src: taskfile.yml.j2
-        dest: /tmp/taskfile.yml
+        dest: /tmp/netbox_taskfile.yml
+        mode: 0600
       tags:
         - device
 
 
     - name: "Run tasks"
       ansible.builtin.include_tasks:
-        file: /tmp/taskfile.yml
+        file: /tmp/netbox_taskfile.yml
         apply:
           tags:
             - device

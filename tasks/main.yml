@@ -164,6 +164,44 @@
     host: "{{ netbox_loadbalancer_ip }}"
     port: 80
 
+- name: "Include all .yaml and .yml files from {{ netbox_data_dir }}"
+  ansible.builtin.include_vars:
+    dir: "{{ netbox_data_dir }}"
+    ignore_unknown_extensions: true
+    extensions:
+      - 'yaml'
+      - 'yml'
+  tags:
+   - device
+ 
+# For the moment I only need {{ netbox_data_dir }}/global_vars.yml
+- name: Get list of permissions
+  ansible.builtin.set_fact:
+    netbox_permission_list: |
+      {% set output = [] %}
+      {% for ndm in netbox_data_models %}
+      {% if ndm.permission is string %}
+      {% set _ = output.append(ndm.permission) %}
+      {% else %}
+      {% for ndml in ndm.permission %}
+      {% set _ = output.append(ndml) %}
+      {% endfor %}
+      {% endif %}
+      {% endfor %}
+      {{ output }}
+      #  tags:
+      #    - device
+
+- name: netbox_permission_list
+  ansible.builtin.debug:
+    var: netbox_permission_list
+      #  tags:
+      #    - device
+
+- meta: end_play
+  #  tags:
+  #    - device
+
 - name: Create permission with all parameters
   netbox.netbox.netbox_permission:
     netbox_url: "http://{{ netbox_loadbalancer_ip }}"
@@ -179,59 +217,20 @@
         - change
         - delete
         - extreme_administration
-      object_types:
-        - dcim.site
-        - dcim.location
-        - dcim.devicetype
-        - dcim.manufacturer
-        - dcim.platform
-        - dcim.devicerole
-        - dcim.device
-        - dcim.interface
-        - dcim.cable
-        - dcim.module
-        - dcim.moduletype
-        - dcim.modulebay
-        - dcim.frontport
-        - dcim.rearport
-        - dcim.powerport
-        - dcim.consoleport
-        - dcim.consoleserverport
-        - dcim.macaddress
-        - ipam.ipaddress
-        - ipam.vlangroup
-        - ipam.vlan
-        - ipam.prefix
-        - ipam.fhrpgroup
-        - ipam.fhrpgroupassignment
-        - ipam.vrf
-        - virtualization.clustertype
-        - virtualization.cluster
-        - virtualization.clustergroup
-        - virtualization.virtualdisk
-        - virtualization.vminterface
-        - virtualization.virtualmachine
-        - wireless.wirelesslan
-        - wireless.wirelesslink
-        - wireless.wirelesslangroup
-        - dcim.region
-        - dcim.sitegroup
-        - dcim.rack
-        - ipam.service
-        - tenancy.tenant
-        - tenancy.contact
-        - tenancy.contactrole
-        - extras.customfield
-        - extras.customfieldchoiceset
-        - extras.customlink
-        - netbox_routing.staticroute
-        - netbox_dns.nameserver
-        - netbox_dns.zone
-        - netbox_dns.record
-          #      constraints:
-          #         id: 1
+      object_types: |
+        {% set output = [] %}
+        {% for ndm in netbox_data_models %}
+        {% if ndm.permission is string %}
+        {% set _ = output.append(ndm.permission) %}
+        {% else %}
+        {% for ndml in ndm.permission %}
+        {% set _ = output.append(ndml) %}
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
     state: present
-  tags: 
+  tags:
     - netbox_setup
     - cluster
     - cluster_type
@@ -245,7 +244,45 @@
     - device_interfaces
     - mac
     - wlan
+    - device
 
+      #        #        - dcim.frontport
+      #        #        - dcim.rearport
+      #        - ipam.fhrpgroupassignment
+      #        - virtualization.virtualdisk
+      #        - virtualization.vminterface
+      #        - virtualization.virtualmachine
+      #          #        - wireless.wirelesslan
+      #          #        - wireless.wirelesslink
+      #          #        - wireless.wirelesslangroup
+      #          #        - dcim.region
+      #          #        - dcim.sitegroup
+      #          #        - dcim.rack
+      #          #        - ipam.service
+      #          #        - extras.customlink
+      #        - netbox_routing.staticroute
+      #        - netbox_dns.nameserver
+      #        - netbox_dns.zone
+      #        - netbox_dns.record
+      #          #      constraints:
+      #          #         id: 1
+      #    state: present
+      #  tags: 
+      #    - netbox_setup
+      #    - cluster
+      #    - cluster_type
+      #    - module
+      #    - contact
+      #    - customfield
+      #    - vrf
+      #    - routes
+      #    - dns
+      #    - cables
+      #    - device_interfaces
+      #    - mac
+      #    - wlan
+      #    - device
+      #
 - name: Create user for Ansible
   netbox.netbox.netbox_user:
     netbox_url: "http://{{ netbox_loadbalancer_ip }}"
