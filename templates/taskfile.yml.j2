@@ -1,0 +1,26 @@
+---
+{% for nbm in netbox_data_models %}
+{% for nni in netbox_new_items %}
+{% if nni.key == nbm.data %}
+    - name: "Add {{ nni.key }}: {{ nni.value }}"
+      {{ nbm.name }}:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ netbox_data_hash[nni.key][nni.value] }}"
+
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+{% for nbd in netbox_diff %}
+{% for nbm in netbox_data_models %}
+{% if nbd.item.key == nbm.data %}
+    - name: "Update {{ nbd.item.key}}: {{nbd.item.value}}"
+      {{ nbm.name }}:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ netbox_data_hash[nbd.item.key][nbd.item.value] }}"
+
+{% endif %}
+{% endfor %}
+{% endfor %}

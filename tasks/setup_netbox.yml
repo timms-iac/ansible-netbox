@@ -1,0 +1,1017 @@
+---
+#- hosts: localhost
+#  tasks:
+    - name: "Include all .yaml and .yml files from {{ inventory_dir }}/netbox"
+      ansible.builtin.include_vars:
+        dir: "{{ netbox_data_dir }}"
+        ignore_unknown_extensions: true
+        extensions:
+          - 'yaml'
+          - 'yml'
+      tags: 
+        - netbox_setup
+        - device_interfaces
+        - cables
+        - cluster_type
+        - cluster
+        - cluster_group
+        - module
+        - contact
+        - customfield
+        - vm_interfaces
+        - address
+        - device
+        - fhrp
+        - vrf
+        - routes
+        - dns
+        - mac
+        - wlan
+        - prefixes
+        - vlan
+
+    - name: "TASK 4: SETUP CUSTOM FIELD CHOICE SETS"
+      netbox.netbox.netbox_custom_field_choice_set:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_custom_field_choice_sets }}"
+      when: netbox_custom_field_choice_sets is defined
+      tags:
+        - netbox_setup
+        - customfield
+
+    - name: "TASK 5: SETUP CUSTOM FIELDS"
+      netbox.netbox.netbox_custom_field:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_custom_fields }}"
+      when: netbox_custom_fields is defined
+      tags: 
+        - netbox_setup
+        - customfield
+
+    - name: "TASK 5: SETUP CUSTOM LINKS"
+      netbox.netbox.netbox_custom_link:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_custom_links }}"
+      when: netbox_custom_links is defined
+      tags:
+        - netbox_setup
+        - customfield
+
+    - name: "TASK 10: SETUP SITES"
+      netbox.netbox.netbox_site:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_sites }}"
+      when: netbox_sites is defined
+      tags: netbox_setup
+
+
+    - name: Get location lookup table
+      ansible.builtin.set_fact:
+        nb_location_lookup: |
+          {% set output = {} %}
+          {% for loc in query("netbox.netbox.nb_lookup", "locations", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if loc.value.name is defined and output[loc.value.name] is not defined %}
+          {% set _ = output.update({ loc.value.name: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - devices
+        - cluster
+        - customfield
+        - device
+
+    - name: Get location lookup table
+      ansible.builtin.debug:
+        var: nb_location_lookup
+      tags:
+        - never
+        - debug
+
+    - name: "TASK 11: SETUP LOCATION"
+      netbox.netbox.netbox_location:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: |
+        {% set output = [] %}
+        {% for loc in netbox_locations %}
+        {% if nb_location_lookup[loc.name] is undefined %}
+        {% set _ = output.append(loc) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_locations is defined
+      tags: 
+        - netbox_setup
+        - cluster
+        - device
+
+    - name: "TASK 12: SETUP CONTACT"
+      netbox.netbox.netbox_contact:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_contacts }}"
+      when: netbox_contacts is defined
+      tags: 
+        - netbox_setup
+        - contact
+
+    - name: "TASK 12: SETUP CONTACT ROLE"
+      netbox.netbox.netbox_contact_role:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_contact_roles }}"
+      when: netbox_contact_roles is defined
+      tags:
+        - netbox_setup
+        - contact
+
+    - name: Get manufacturers lookup table
+      ansible.builtin.set_fact:
+        nb_manufacturers_lookup: |
+          {% set output = {} %}
+          {% for mf in query("netbox.netbox.nb_lookup", "manufacturers", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if mf.value.name is defined and output[mf.value.name] is not defined %}
+          {% set _ = output.update({ mf.value.name: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - devices
+        - cluster
+        - customfield
+        - device
+
+    - name: Get location lookup table
+      ansible.builtin.debug:
+        var: nb_manufacturers_lookup
+      tags:
+        - never
+        - debug
+
+    - name: "TASK 20: SETUP MANUFACTURERS"
+      netbox.netbox.netbox_manufacturer:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: |
+        {% set output = [] %}
+        {% for mf in netbox_manufacturers %}
+        {% if nb_manufacturers_lookup[mf] is undefined %}
+        {% set _ = output.append({ "name": mf }) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_manufacturers is defined
+      tags: 
+        - netbox_setup
+        - module
+        - device
+
+    - name: Get device types lookup table
+      ansible.builtin.set_fact:
+        nb_device_types_lookup: |
+          {% set output = {} %}
+          {% for dt in query("netbox.netbox.nb_lookup", "device-types", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if dt.value.model is defined and output[dt.value.model] is not defined %}
+          {% set _ = output.update({ dt.value.model: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - devices
+        - cluster
+        - customfield
+        - device
+
+    - name: Get device type lookup table
+      ansible.builtin.debug:
+        var: nb_device_types_lookup
+      tags:
+        - never
+        - debug
+
+    - name: "TASK 30: SETUP DEVICE TYPES"
+      netbox.netbox.netbox_device_type:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: |
+        {% set output = [] %}
+        {% for dt in netbox_device_types %}
+        {% if nb_device_types_lookup[dt.model] is undefined %}
+        {% set _ = output.append(dt) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_device_types is defined
+      tags: 
+        - netbox_setup
+        - device
+
+    - name: Get platforms lookup table
+      ansible.builtin.set_fact:
+        nb_platforms_lookup: |
+          {% set output = {} %}
+          {% for pf in query("netbox.netbox.nb_lookup", "platforms", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if pf.value.name is defined and output[pf.value.name] is not defined %}
+          {% set _ = output.update({ pf.value.name: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - devices
+        - cluster
+        - customfield
+        - device
+
+    - name: Get platforms lookup table
+      ansible.builtin.debug:
+        var: nb_platforms_lookup
+      tags:
+        - never
+        - debug
+
+    - name: "TASK 40: SETUP PLATFORMS"
+      netbox.netbox.netbox_platform:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: |
+        {% set output = [] %}
+        {% for pf in netbox_platforms %}
+        {% if nb_platforms_lookup[pf.name] is undefined %}
+        {% set _ = output.append(pf) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_platforms is defined
+      tags: 
+        - netbox_setup
+        - cluster
+        - device
+
+    - name: Get device role lookup table
+      ansible.builtin.set_fact:
+        nb_device_roles_lookup: |
+          {% set output = {} %}
+          {% for dr in query("netbox.netbox.nb_lookup", "device-roles", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if dr.value.name is defined and output[dr.value.name] is not defined %}
+          {% set _ = output.update({ dr.value.name: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - devices
+        - cluster
+        - customfield
+        - device
+
+    - name: "TASK 50: SETUP DEVICE ROLES"
+      netbox.netbox.netbox_device_role:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: |
+        {% set output = [] %}
+        {% for dr in netbox_device_roles %}
+        {% if nb_device_roles_lookup[dr.name] is undefined %}
+        {% set _ = output.append(dr) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_device_roles is defined
+      tags: 
+        - netbox_setup
+        - cluster
+        - device
+
+    - name: Get vrfs lookup table
+      ansible.builtin.set_fact:
+        nb_vrfs_lookup: |
+          {% set output = {} %}
+          {% for vrf in query("netbox.netbox.nb_lookup", "vrfs", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if vrf.value.name is defined and output[vrf.value.name] is undefined %}
+          {% set _ = output.update({ vrf.value.name: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - devices
+        - cluster
+        - customfield
+        - device
+
+    - name: "TASK 79: SETUP VRFS"
+      netbox.netbox.netbox_vrf:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: |
+        {% set output = [] %}
+        {% for vrf in netbox_vrfs %}
+        {% if nb_vrfs_lookup[vrf.name] is undefined %}
+        {% set _ = output.append(vrf) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_vrfs is defined
+      tags:
+        - netbox_setup
+        - vrf
+
+    - name: Get fhrp groups lookup table
+      ansible.builtin.set_fact:
+        nb_fhrp_groups_lookup: |
+          {% set output = {} %}
+          {% for fhrp in query("netbox.netbox.nb_lookup", "fhrp-groups", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if fhrp.value.group_id is defined and output[fhrp.value.group_id] is undefined %}
+          {% set _ = output.update({ fhrp.value.group_id: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - fhrp
+
+    - name: "TASK 110: SETUP FHRP GROUPS"
+      netbox.netbox.netbox_fhrp_group:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: |
+        {% set output = [] %}
+        {% for fhrp in netbox_fhrp_groups %}
+        {% if nb_fhrp_groups_lookup[fhrp.group_id] is undefined %}
+        {% set _ = output.append(fhrp) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_fhrp_groups is defined
+      tags:
+        - netbox_setup
+        - fhrp
+
+    - name: Get fhrp group assignments lookup table
+      ansible.builtin.set_fact:
+        nb_fhrp_group_assignments_lookup: |
+          {% set output = {} %}
+          {% for fhrp in query("netbox.netbox.nb_lookup", "fhrp-group-assignments", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if fhrp.value.fhrp_group is defined and output[fhrp.value.fhrp_group] is undefined %}
+          {% set _ = output.update({ fhrp.value.fhrp_group: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - fhrp
+
+    - name: "TASK 120: SETUP FHRP GROUP ASSIGNMENTS"
+      netbox.netbox.netbox_fhrp_group_assignment:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: |
+        {% set output = [] %}
+        {% for fhrp in netbox_fhrp_group_assignments %}
+        {% if nb_fhrp_group_assignments_lookup[fhrp.fhrp_group] is undefined %}
+        {% set _ = output.append(fhrp) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_fhrp_group_assignments is defined
+      tags:
+        - netbox_setup
+        - fhrp
+
+    - name: Get VRF lookup table
+      ansible.builtin.set_fact:
+        nb_vrfs_lookup: |
+          {% set output = {} %}
+          {% for vrf in query("netbox.netbox.nb_lookup", "vrfs", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if vrf.value.name is defined and output[vrf.value.name] is undefined %}
+          {% set _ = output.update({ vrf.value.name: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - address
+
+
+    - name: Get Device Interfaces lookup table
+      ansible.builtin.set_fact:
+        nb_device_interfaces_lookup: |
+          {% set output = {} %}
+          {% for di in query("netbox.netbox.nb_lookup", "interfaces", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if output[di.value.device.name] is not defined %}
+          {% set _ = output.update({ di.value.device.name: {} }) %}
+          {% endif %}
+          {% if output[di.value.device.name][di.value.name] is not defined %}
+          {% set _ = output[di.value.device.name].update({ di.value.name: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - address
+
+    - name: "TASK 80: DELETE IP ADDRESSES"
+      netbox.netbox.netbox_ip_address:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: |
+          {% set output = { "address": item.value.address } %}
+          {{ output }}
+        state: absent
+      loop: "{{ query('netbox.netbox.nb_lookup', 'ip-addresses', api_endpoint=ansible_nb_url,token=netbox_ansible_token) }}"
+      tags:
+        - netbox_setup
+        - address
+
+
+    - name: "TASK 80: SETUP IP ADDRESSES"
+      netbox.netbox.netbox_ip_address:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: |
+          {% if item["assigned_object"] is defined and item["assigned_object"]["device"] is defined and item["assigned_object"]["name"] is defined and (nb_device_interfaces_lookup[item["assigned_object"]["device"]] is undefined or nb_device_interfaces_lookup[item["assigned_object"]["device"]][item["assigned_object"]["name"]] is undefined) %}
+          {% set _ = item.pop("assigned_object") %}
+          {% endif %}
+          {% if item["vrf"] is defined and nb_vrfs_lookup[item["vrf"]] is undefined %}
+          {% set _ = item.pop("vrf") %}
+          {% endif %}
+          {# assigned_object_id and assigned_object_type require patch of .ansible/collections/ansible_collections/netbox/netbox/plugins/modules/netbox_ip_address.py #}
+          {% if item["assigned_object_id"] is defined and item["assigned_object_type"] is defined and not item["assigned_object_id"] | int > 0 %}
+          {% set _ = item.pop("assigned_object_id") %}
+          {% set _ = item.pop("assigned_object_type") %}
+          {% endif %}
+          {{ item }}
+      loop: "{{ netbox_ip_addresses }}"
+      when: netbox_ip_addresses is defined
+      tags:
+        - netbox_setup
+        - address
+
+    - name: "TASK 85: SETUP VLAN GROUPS"
+      netbox.netbox.netbox_vlan_group:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_vlan_groups }}"
+      when: netbox_vlan_groups is defined
+      tags:
+        - netbox_setup
+        - vlan_groups
+        - cluster
+
+    - name: "TASK 90: SETUP VLANS"
+      netbox.netbox.netbox_vlan:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_vlans }}"
+      when: netbox_vlans is defined
+      tags:
+        - netbox_setup
+        - vlan
+        - cluster
+
+    - name: "TASK 140: SETUP CLUSTER TYPE"
+      netbox.netbox.netbox_cluster_type:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_cluster_types }}"
+      when: netbox_cluster_types is defined
+      tags:
+        - netbox_setup
+        - cluster_type
+
+    - name: "TASK 141: SETUP CLUSTER GROUP"
+      netbox.netbox.netbox_cluster_group:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_cluster_groups }}"
+      when: netbox_cluster_groups is defined
+      tags:
+        - netbox_setup
+        - cluster_group
+
+    - name: "TASK 142: SETUP CLUSTER"
+      netbox.netbox.netbox_cluster:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_clusters }}"
+      when: netbox_clusters is defined
+      tags:
+        - netbox_setup
+        - cluster
+
+    - name: Get devices lookup table
+      ansible.builtin.set_fact:
+        nb_devices_lookup: |
+          {% set output = {} %}
+          {% for dev in query("netbox.netbox.nb_lookup", "devices", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if dev.value.name is defined and output[dev.value.name] is not defined %}
+          {% set _ = output.update({ dev.value.name: 1 }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - devices
+        - cluster
+        - customfield
+        - device
+
+    - name: Get ip addresses lookup table
+      ansible.builtin.set_fact:
+        nb_ip_addresses_lookup: |
+          {% set output = {} %}
+          {% for ip in query("netbox.netbox.nb_lookup", "ip-addresses", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if ip.value.address is defined and ip.value.device is defined and output[ip.value.address] is not defined %}
+          {% set _ = output.update({ ip.value.address: ip.value.device }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - devices
+        - cluster
+        - customfield
+        - device
+
+
+    - name: "TASK 50: SETUP DEVICE ROLES"
+      netbox.netbox.netbox_device_role:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: |
+        {% set output = [] %}
+        {% for dr in netbox_device_roles %}
+        {% if nb_device_roles_lookup[dr.name] is undefined %}
+        {% set _ = output.append(dr) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_device_roles is defined
+      tags:
+        - netbox_setup
+        - cluster
+        - device
+
+    - name: "TASK 60: SETUP DEVICE"
+      netbox.netbox.netbox_device:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: |
+          {% if item["primary_ip4"] is defined and (nb_ip_addresses_lookup[item["primary_ip4"]] is undefined or nb_ip_addresses_lookup[item["primary_ip4"]] != item.name) %}
+          {% set _ = item.pop("primary_ip4") %}
+          {% endif %}
+          {{ item }}
+      loop: |
+        {% set output = [] %}
+        {% for dev in netbox_devices %}
+        {% if nb_devices_lookup[dev.name] is undefined %}
+        {% set _ = output.append(dev) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+        #      ignore_errors: true
+      when: netbox_devices is defined
+      tags: 
+        - netbox_setup
+        - devices
+        - cluster
+        - customfield
+        - device
+
+    - name: Show device interfaces table
+      ansible.builtin.debug:
+        var: query("netbox.netbox.nb_lookup", "interfaces", api_endpoint=ansible_nb_url,token=netbox_ansible_token)
+      tags:
+        - never
+        - debug
+
+    - name: Get Device Interfaces lookup table
+      ansible.builtin.set_fact:
+        nb_device_interfaces_lookup: |
+          {% set output = {} %}
+          {% for di in query("netbox.netbox.nb_lookup", "interfaces", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if output[di.value.device.name] is not defined %}
+          {% set _ = output.update({ di.value.device.name: {} }) %}
+          {% endif %}
+          {% if output[di.value.device.name][di.value.name] is undefined %}
+          {% set _ = output[di.value.device.name].update({ di.value.name: 1 }) %}
+          {% if di.value.mac_address is defined and di.value.mac_address is not none and di.value.mac_address is ansible.utils.mac %}
+          {% set _ = output[di.value.device.name].update({ di.value.name: di.value.mac_address.lower() }) %}
+          {% endif %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - mac
+        - device_interfaces
+        - module
+        - device
+
+    - name: Show device interfaces lookup table
+      ansible.builtin.debug:
+        var: nb_device_interfaces_lookup
+      tags:
+        - never
+        - debug
+
+    - ansible.builtin.meta: end_play
+      tags:
+        - netbox_setup
+        - mac
+        - device_interfaces
+        - module
+          #        - device
+
+    - name: "TASK 69: SETUP MAC ADDRESS"
+      netbox.netbox.netbox_mac_address:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: |
+          {% set output = {} %}
+          {% if item["assigned_object"] is defined and item["assigned_object"]["device"] is defined and item["assigned_object"]["name"] is defined and  nb_device_interfaces_lookup[item["assigned_object"]["device"]] is defined and nb_device_interfaces_lookup[item["assigned_object"]["device"]][item["assigned_object"]["name"]] is defined %}
+          {% set output = item %}
+          {% elif item["mac_address"] is defined %}
+          {% set output = { "mac_address": item["mac_address"] } %}
+          {% endif %}
+          {{ output }}
+      loop: "{{ netbox_mac_addresses }}"
+      when: netbox_mac_addresses is defined
+      tags:
+        - netbox_setup
+        - mac
+
+
+    - name: Show mac table
+      ansible.builtin.debug:
+        var: query("netbox.netbox.nb_lookup", "mac", api_endpoint=ansible_nb_url,token=netbox_ansible_token)
+      tags:
+        - never
+        - debug
+
+    - name: Get MAC lookup table
+      ansible.builtin.set_fact:
+        nb_mac_lookup: |
+          {% set output = {} %}
+          {% for mac in query("netbox.netbox.nb_lookup", "mac", api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% if output[mac.value.mac_address] is not defined %}
+          {% set _ = output.update({ mac.value.mac_address: 1 }) %}
+          {% endif %}
+          {% if mac.value["assigned_object"]  is defined and mac.value["assigned_object"]["name"] is defined and mac.value["assigned_object"]["device"]["name"] is defined %}
+          {% set _ = output.update({ mac.value.mac_address.lower() : { "name": mac.value["assigned_object"]["name"], "device": mac.value["assigned_object"]["device"]["name"]} }) %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - netbox_setup
+        - device_interfaces
+        - module
+        - device
+
+    - name: Show mac lookup table
+      ansible.builtin.debug:
+        var: nb_mac_lookup
+      tags:
+        - never
+        - debug
+
+    - name: Show device interfaces lookup table
+      ansible.builtin.debug:
+        var: nb_device_interfaces_lookup
+      tags:
+        - never
+        - debug
+
+    - name: "TASK 70: SETUP DEVICE INTERFACES"
+      netbox.netbox.netbox_device_interface:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: |
+            {% if item["primary_mac_address"] is defined and (nb_mac_lookup[item["primary_mac_address"]] is undefined or nb_mac_lookup[item["primary_mac_address"]]["name"] is undefined or nb_mac_lookup[item["primary_mac_address"]]["device"] is undefined) %}
+            {% set _ = item.pop("primary_mac_address") %}
+            {% endif %}
+            {{ item }}
+      loop: |
+        {% set output = [] %}
+        {% for dev in netbox_device_interfaces %}
+        {% if dev.device is defined and (nb_device_interfaces_lookup[dev.device] is undefined or nb_device_interfaces_lookup[dev.device][dev.name] is undefined or (dev.primary_mac_address is defined and nb_device_interfaces_lookup[dev.device][dev.name] != dev.primary_mac_address.lower() )) %}
+        {% set _ = output.append(dev) %}
+        {% endif %}
+        {% endfor %}
+        {{ output }}
+      when: netbox_device_interfaces is defined
+      tags: 
+        - netbox_setup
+        - device_interfaces
+        - module
+        - device
+
+    - name: "TASK 100: SETUP PREFIXES"
+      netbox.netbox.netbox_prefix:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_prefixes }}"
+      when: netbox_prefixes is defined
+      tags:
+        - netbox_setup 
+        - prefixes
+        - cluster
+        - address
+
+    - name: "TASK 165: SETUP CONSOLE SERVER PORTS"
+      netbox.netbox.netbox_console_server_port:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_console_server_ports }}"
+      when: netbox_console_server_ports is defined
+      tags:
+        - netbox_setup
+        - cables
+
+    - name: "TASK 130: SETUP CABLES"
+      netbox.netbox.netbox_cable:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_cables }}"
+      when: netbox_cables is defined
+      tags:
+        - netbox_setup
+        - cables
+
+    - name: "TASK 150: SETUP VIRTUAL MACHINE"
+      netbox.netbox.netbox_virtual_machine:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_virtual_machines }}"
+      when: netbox_virtual_machines is defined
+      tags:
+        - netbox_setup
+        - cluster
+
+    - name: "TASK 151: SETUP VIRTUAL DISK"
+      netbox.netbox.netbox_virtual_disk:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_virtual_disks }}"
+      when: netbox_virtual_disks is defined
+      tags:
+        - netbox_setup
+        - cluster
+
+    - name: "TASK 152: SETUP VIRTUAL MACHINE INTERFACE"
+      netbox.netbox.netbox_vm_interface:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_vm_interfaces }}"
+      when: netbox_vm_interfaces is defined
+      tags:
+        - netbox_setup
+        - cluster
+        - vm_interfaces
+
+    - name: "TASK 160: SETUP MODULE TYPE"
+      netbox.netbox.netbox_module_type:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_module_types }}"
+      when: netbox_module_types is defined
+      tags:
+        - netbox_setup
+        - module
+
+    - name: "TASK 161: SETUP MODULE BAYS"
+      netbox.netbox.netbox_module_bay:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_module_bays }}"
+      when: netbox_module_bays is defined
+      tags:
+        - netbox_setup
+        - module
+
+    - name: "TASK 162: SETUP MODULE"
+      netbox.netbox.netbox_module:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_modules }}"
+      when: netbox_modules is defined
+      tags:
+        - netbox_setup
+        - module
+
+    - name: "TASK 162: SETUP FRONT PORTS"
+      netbox.netbox.netbox_front_port:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_front_ports }}"
+      when: netbox_front_ports is defined
+      tags:
+        - netbox_setup
+        - module
+
+    - name: "TASK 163: SETUP REAR PORTS"
+      netbox.netbox.netbox_rear_port:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_rear_ports }}"
+      when: netbox_rear_ports is defined
+      tags:
+        - netbox_setup
+        - module
+
+    - name: "TASK 164: SETUP POWER PORTS"
+      netbox.netbox.netbox_power_port:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_power_ports }}"
+      when: netbox_power_ports is defined
+      tags:
+        - netbox_setup
+        - module
+        - device
+
+    - name: "TASK 165: SETUP CONSOLE PORTS"
+      netbox.netbox.netbox_console_port:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_console_ports }}"
+      when: netbox_console_ports is defined
+      tags:
+        - netbox_setup
+        - module
+
+    - name: "TASK 166: SETUP WLANS"
+      netbox.netbox.netbox_wireless_lan:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_wireless_lans }}"
+      when: netbox_wireless_lans is defined
+      tags:
+        - netbox_setup
+        - wlan
+
+    - name: "TASK 166: SETUP WLANi GROUPS"
+      netbox.netbox.netbox_wireless_lan_group:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_wireless_lan_groups }}"
+      when: netbox_wireless_lan_groups is defined
+      tags:
+        - netbox_setup
+        - wlan
+
+    - name: "TASK 166: SETUP WLANi LINK"
+      netbox.netbox.netbox_wireless_link:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+        netbox_token: "{{ netbox_ansible_token }}"
+        data: "{{ item }}"
+      loop: "{{ netbox_wireless_links }}"
+      when: netbox_wireless_links is defined
+      tags:
+        - netbox_setup
+        - wlan
+
+    - name: "TASK 170: SETUP STATC ROUTES"
+      ansible.builtin.include_tasks: api_call.yml
+      vars:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}/api/plugins/routing/staticroute/"
+        netbox_token: "{{ netbox_ansible_token }}"
+        netbox_data: "{{ netbox_static_routes }}"
+      args:
+        apply:
+          tags:
+            - netbox_setup
+            - routes
+      when: netbox_static_routes is defined
+      tags:
+        - netbox_setup
+        - routes
+
+
+    - name: "TASK 180: SETUP NAMESERVERS"
+      ansible.builtin.include_tasks: api_call.yml
+      vars:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}/api/plugins/netbox-dns/nameservers/"
+        netbox_token: "{{ netbox_ansible_token }}"
+        netbox_data: "{{ netbox_nameservers }}"
+      args:
+        apply:
+          tags:
+            - netbox_setup
+            - dns
+      when: netbox_nameservers is defined
+      tags:
+        - netbox_setup
+        - dns
+
+    - name: "TASK 181: SETUP DNS ZONES"
+      ansible.builtin.include_tasks: api_call.yml
+      vars:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}/api/plugins/netbox-dns/zones/"
+        netbox_token: "{{ netbox_ansible_token }}"
+        netbox_data: "{{ netbox_dns_zones }}"
+      args:
+        apply:
+          tags:
+            - netbox_setup
+            - dns
+      when: netbox_dns_zones is defined
+      tags:
+        - netbox_setup
+        - dns
+
+    - name: "TASK 182: SETUP DNS RECORDS"
+      ansible.builtin.include_tasks: api_call.yml
+      vars:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}/api/plugins/netbox-dns/records/"
+        netbox_token: "{{ netbox_ansible_token }}"
+        netbox_data: "{{ netbox_dns_records }}"
+      args:
+        apply:
+          tags:
+            - netbox_setup
+            - dns
+      when: netbox_dns_records is defined
+      tags:
+        - netbox_setup
+          #        - dns
+
+    - name: "TASK 183: GENERATE AUTO DNS RECORDS"
+      ansible.builtin.set_fact:
+        netbox_auto_dns_records: "{{ netbox_auto_dns_records | default([]) + [{'name': item.value.dns_name | split('.',1) | first, 'value': item.value.address | split('/',1) | first, 'status': 'active', 'type': 'A', 'zone': {'name': item.value.dns_name | split('.',1) | last }}]  }}"
+      when: item.value.dns_name | length > 0
+      loop: '{{ query("netbox.netbox.nb_lookup", "ip-addresses",
+        api_endpoint="http://" + netbox_loadbalancer_ip,
+        token=netbox_ansible_token) }}'
+      tags:
+        - netbox_setup
+        - dns
+
+          #    - name: "TASK 183: GENERATE AUTO DNS RECORDS"
+          #      ansible.builtin.debug:
+          #        var: netbox_auto_dns_records
+          #      tags:
+          #        - netbox_setup
+          #        - dns
+
+
+    - name: "TASK 184: SETUP AUTO DNS RECORDS"
+      ansible.builtin.include_tasks: api_call.yml
+      vars:
+        netbox_url: "http://{{ netbox_loadbalancer_ip }}/api/plugins/netbox-dns/records/"
+        netbox_token: "{{ netbox_ansible_token }}"
+        netbox_data: "{{ netbox_auto_dns_records }}"
+      args:
+        apply:
+          tags:
+            - netbox_setup
+            - dns
+      when: netbox_auto_dns_records is defined
+      tags:
+        - netbox_setup
+        - dns

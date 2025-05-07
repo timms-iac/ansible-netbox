@@ -1,0 +1,18 @@
+FROM netboxcommunity/netbox:latest
+
+COPY ./plugin_requirements.txt /opt/netbox/
+COPY ./local_requirements.txt /opt/netbox/
+RUN mkdir -p /opt/netbox/netbox/static/netbox_topology_views/img
+RUN /usr/local/bin/uv pip install -r /opt/netbox/plugin_requirements.txt
+RUN /usr/local/bin/uv pip install -r /opt/netbox/local_requirements.txt
+RUN /usr/local/bin/uv pip install netbox-plugin-dns
+RUN /usr/local/bin/uv pip install netbox-topology-views
+
+# These lines are only required if your plugin has its own static files.
+COPY configuration/configuration.py /etc/netbox/config/configuration.py
+COPY configuration/plugins.py /etc/netbox/config/plugins.py
+# https://github.com/netbox-community/ansible_modules/issues/1381
+RUN rm -f /opt/netbox/netbox/local/release.yaml
+RUN DEBUG="true" SECRET_KEY="dummydummydummydummydummydummydummydummydummydummy" \
+    /opt/netbox/venv/bin/python /opt/netbox/netbox/manage.py collectstatic --no-input
+

@@ -1,0 +1,54 @@
+---
+- name: Create build directory
+  ansible.builtin.file:
+    path: "{{ netbox_build_path }}"
+    state: directory
+    mode: 0700
+  tags: netbox_build
+
+- name: Checkout git repo
+  ansible.builtin.git:
+    repo: "{{ netbox_build_repo }}"
+    dest: "{{ netbox_build_path }}"
+  tags: netbox_build
+
+- name: Write local_requirements.txt
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ netbox_build_path }}/{{ item }}"
+    mode: 0644
+  loop:
+    - "plugin_requirements.txt"
+    - "local_requirements.txt"
+    - "Dockerfile-Plugins"
+    - "docker-compose.override.yml"
+    - "configuration/plugins.py"
+  tags: netbox_build
+
+      #- name: Build netbox
+      #  community.docker.docker_compose_v2:
+      #    project_src: "{{ netbox_build_path }}"
+      #    build: always
+      #    state: present
+
+- name: Build netbox
+  ansible.builtin.shell: "docker compose build --no-cache"
+  args:
+    chdir: "{{ netbox_build_path }}"
+  tags: netbox_build
+
+- name: Tag and push to registry
+  community.docker.docker_image:
+    name: netbox:latest-plugins
+    repository: "{{ netbox_build_repo_srv }}/{{ netbox_build_repo_user }}/{{ netbox_build_repo_netbox }}"
+    tag: latest-plugins
+    force_tag: true
+    push: true
+    source: local
+  tags: netbox_build
+
+- name: Delete build directory
+  ansible.builtin.file:
+    path: "{{ netbox_build_path }}"
+    state: absent
+  tags: netbox_build

@@ -1,0 +1,119 @@
+---
+# https://www.logsec.cloud/posts/ansible-making-api-calls-idempotent/
+- name: Get Data
+  ansible.builtin.uri:
+    url: "{{ netbox_url }}"
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+      Content-Type: application/json
+    method: GET
+    status_code: 200
+  ignore_errors: true
+  register: uri_data
+
+- name: Response
+  ansible.builtin.debug:
+    var: uri_data
+
+
+- name: Extract all existing data
+  ansible.builtin.set_fact:
+    mydata: "{{ mydata | default({}) | combine({item.name: item.id}) }}"
+    data_to_update: "{{ data_to_update | default([]) + [item.name] }}"
+  with_items: "{{ uri_data | json_query('json.results') }}"
+
+- name: Extract all netbox data
+  ansible.builtin.set_fact:
+    data_to_create: "{{ data_to_create | default([]) + [item.name] }}"
+  with_items: "{{ netbox_data }}"
+
+- name: Gather all data that need to be created
+  ansible.builtin.set_fact:
+    data_to_create: "{{ data_to_create | difference(data_to_update) | list }}"
+  when:
+    - data_to_update is defined
+    - data_to_update != []
+
+- name: Print required variables
+  ansible.builtin.debug:
+    msg:
+      - "data_to_create -- {{ data_to_create | default([]) }}"
+      - "data_to_update -- {{ data_to_update | default([]) }}"
+
+- name: A group of tasks to be executed when data_to_create is defined
+  when:
+    - data_to_create is defined
+    - data_to_create != []
+  block:
+    - name: Create Data
+      ansible.builtin.uri:
+        url: "{{ netbox_url }}"
+        headers:
+          Authorization: "Token {{ netbox_token }}"
+          Content-Type: application/json
+        method: POST
+        status_code: 201
+        body_format: json
+        body: "{{ item }}"
+      ignore_errors: true
+      register: agent_data_response
+      when: item.name in data_to_create
+      loop: "{{ netbox_data }}"
+
+    - name: Response
+      ansible.builtin.debug:
+        msg: "{{ agent_data_response }}"
+      tags:
+        - never
+        - debug
+
+    - name: Extract the data_ids from the agent_data_response variable
+      ansible.builtin.set_fact:
+        data_ids: "{{ data_ids | default({}) | combine ({item.0 : item.1}) }}"
+      with_together:
+        - "{{ agent_data_response | json_query('results[*].json.name') }}"
+        - "{{ agent_data_response | json_query('results[*].json.id') }}"
+
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "DATA IDS - {{ data_ids }}"
+
+- name: A group of tasks to be executed when data_to_update is defined
+  when:
+    - data_to_update is defined
+    - data_to_update != []
+
+  block:
+    - name: Update Data
+      ansible.builtin.uri:
+        url: "{{ netbox_url }}{{ mydata | json_query(item.name) }}/"
+        headers:
+          Authorization: "Token {{ netbox_token }}"
+          Content-Type: application/json
+        method: PUT
+        status_code: 200
+        body_format: json
+        body: "{{ item }}"
+      ignore_errors: true
+      register: agent_data_response
+      when: item.name in data_to_update
+      loop: "{{ netbox_data }}"
+
+    - name: Response
+      ansible.builtin.debug:
+        msg: "{{ agent_data_response }}"
+      tags:
+        - never
+        - debug
+
+    - name: Extract the data_ids from the agent_data_response variable
+      ansible.builtin.set_fact:
+        data_ids: "{{ data_ids | default({}) | combine ({item.0 : item.1}) }}"
+      with_together:
+        - "{{ agent_data_response | json_query('results[*].json.name') }}"
+        - "{{ agent_data_response | json_query('results[*].json.id') }}"
+
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "DATA IDS - {{ data_ids }}"
+

@@ -1,2 +1,549 @@
 ---
 # vars file for netbox
+netbox_data_models:
+  - name: netbox.netbox.netbox_site
+    lookup: sites
+    primary_key: name
+    data: sites
+    var_prefix: netbox_sites_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      asn: asn
+      comments: comments
+      contact_email: contact_email
+      contact_name: contact_name
+      contact_phone: contact_phone
+      custom_fields: custom_fields
+      description: description
+      facility: facility
+      latitude: latitude
+      longitude: longitude
+      physical_address: physical_address
+      region: region
+      shipping_address: shipping_address
+      site_group: site_group
+      slug: slug
+      status: status.value
+      tags: tags
+      tenant: tenant
+      time_zone: time_zone
+    default_param:
+      comments: ""
+      description: ""
+      status: "active"
+      tags: []
+      custom_fields: {}
+      facility: ""
+      physical_address: ""
+      shipping_address: ""
+
+  - name: netbox.netbox.netbox_location
+    lookup: locations
+    primary_key: name
+    data: locations
+    var_prefix: netbox_locations_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      facility: facility
+      parent_location: parent.slug
+      site: site.name
+      slug: slug
+      status: status.value
+      tags: tags
+      tenant: tenant
+    default_param:
+      description: ""
+      status: "active"
+      tags: []
+      custom_fields: {}
+      facility: ""
+      site: "{{ netbox_default_site }}"
+
+  - name: netbox.netbox.netbox_device_role
+    lookup: device-roles
+    primary_key: name
+    data: device_roles
+    var_prefix: netbox_device_roles_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      color: color
+      custom_fields: custom_fields
+      description: description
+      slug: slug
+      tags: tags
+      vm_role: vm_role
+    default_param:
+      description: ""
+      tags: []
+      custom_fields: {}
+      vm_role: false
+      color: 9e9e9e
+
+  - name: netbox.netbox.netbox_manufacturer
+    lookup: manufacturers
+    primary_key: name
+    data: manufacturers
+    var_prefix: netbox_manufacturers_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      slug: slug
+      tags: tags
+    default_param:
+      description: ""
+      tags: []
+      custom_fields: {}
+
+  - name: netbox.netbox.netbox_platform
+    lookup: platforms
+    primary_key: name
+    data: platforms
+    var_prefix: netbox_platforms_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      config_template: config_template
+      custom_fields: custom_fields
+      description: description
+      manufacturer: manufacturer
+      napalm_args: napalm_args
+      napalm_driver: napalm_driver
+      slug: slug
+      tags: tags
+    default_param:
+      description: ""
+      tags: []
+      custom_fields: {}
+
+  - name: netbox.netbox.netbox_device_type
+    lookup: device-types
+    primary_key: model
+    data: device_types
+    var_prefix: netbox_device_types_
+    aggregation: "{{ netbox_device_types }}"
+    req_param:
+      model: model
+    opt_param:
+      airflow: airflow
+      comments: comments
+      custom_fields: custom_fields
+      default_platform: default_platform
+      description: description
+      is_full_depth: is_full_depth
+      manufacturer: manufacturer.name
+      part_number: part_number
+      slug: slug
+      subdevice_role: subdevice_role
+      tags: tags
+      u_height: u_height
+      weight: weight
+      weight_unit: weight_unit
+    default_param:
+      comments: ""
+      description: ""
+      tags: []
+      is_full_depth: false
+      custom_fields: {}
+      u_height: 1.0
+
+  - name: netbox.netbox.netbox_device
+    lookup: devices
+    primary_key: name
+    data: devices
+    var_prefix: netbox_devices_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+    opt_param:
+      airflow: airflow.value
+      asset_tag: asset_tag
+      cluster: cluster.name
+      comments: comments
+      config_template: config_template
+      custom_fields: custom_fields
+      description: description
+      device_role: role.name
+      device_type: device_type.slug
+      face: face
+      local_context_data: local_context_data
+      location: location.name
+      oob_ip: oob_ip
+      platform: platform.slug
+      position: position
+      primary_ip4: primary_ip4.address
+      primary_ip6: primary_ip6.address
+      rack: rack
+      serial: serial
+      site: site.name
+      status: status.value
+      tags: tags
+      tenant: tenant
+      vc_position: vc_position
+      vc_priority: vc_priority
+      virtual_chassis: virtual_chassis
+    default_param:
+      comments: ""
+      description: ""
+      serial: ""
+      status: "active"
+      tags: []
+      custom_fields:
+        Firmware: null
+        NetworkVersion: 2
+        webmanagement: null
+        OpenVSwitchProtocols:
+          - none
+      site: "{{ netbox_default_site }}"
+
+  - name: netbox.netbox.netbox_device_interface
+    lookup: interfaces
+    primary_key: device.name-name
+    data: device_interfaces
+    var_prefix: netbox_device_interfaces_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+    opt_param:
+      bridge:
+        name: bridge.name
+        device: bridge.device.name
+      custom_fields: 
+        EEE: custom_fields.EEE
+        LLDP: custom_fields.LLDP
+      description: description
+      device: device.name
+      duplex: duplex.value
+      enabled: enabled
+      form_factor: form_factor
+      label: label
+      lag: 
+        name: lag.name
+      mac_address: mac_address
+      mark_connected: mark_connected
+      mgmt_only: mgmt_only
+      mode: mode.value
+      mtu: mtu
+      parent_interface: parent_interface
+      poe_mode: poe_mode
+      poe_type: poe_type
+      primary_mac_address: mac_address
+      speed: speed
+      tagged_vlans: tagged_vlans.list.name
+      tags: tags
+      tx_power: tx_power
+      type: type.label
+      untagged_vlan: 
+        name: untagged_vlan.name
+          #        site: untagged_vlan.site.name # no site information in interfaces
+      vrf: vrf.name
+      wwn: wwn
+    default_param:
+      description: ""
+      enabled: true
+      label: ""
+      mark_connected: false
+      mgmt_only: false
+      tags: []
+      custom_fields:
+        EEE: false
+        LLDP: false
+    filter:
+      mac_address: upper
+      primary_mac_address: upper
+      mode: lower
+          #      type: upper
+          #    suppress_if_undefined:
+          #      primary_mac_address:
+          #        mac_addresses: mac_address
+          #      mac_address:
+          #        mac_addresses: mac_address
+
+  - name: netbox.netbox.netbox_mac_address
+    lookup: mac
+    primary_key: mac_address
+    data: mac_addresses
+    var_prefix: netbox_mac_addresses_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      mac_address: mac_address
+    opt_param:
+      assigned_object: 
+        device: assigned_object.device.name
+        name: assigned_object.name
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      tags: tags
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+        #    filter:
+        #      mac_address: upper
+        #    suppress_if_undefined:
+        #      assigned_object:
+        #        device: devices
+        #        name: interfaces
+
+  - name: netbox.netbox.netbox_power_port
+    lookup: power-ports
+    primary_key: device.name-name
+    data: power_ports
+    var_prefix: netbox_power_ports_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+      device: device.name
+    opt_param:
+      allocated_draw: allocated_draw
+      description: description
+      label: label
+      maximum_draw: maximum_draw
+      tags: tags
+      type: type
+    default_param:
+      description: ""
+      label: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_module_bay
+    lookup: module-bays
+    primary_key: device.name-name
+    data: module_bays
+    var_prefix: netbox_module_bays_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+      device: device.name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      label: label
+      position: position
+      tags: tags
+    default_param:
+      custom_fields: {}
+      description: ""
+      label: ""
+      position: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_module_type
+    lookup: module-types
+    primary_key: model
+    data: module_types
+    var_prefix: netbox_module_types_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      model: model
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      manufacturer: manufacturer.name
+      part_number: part_number
+      tags: tags
+      weight: weight
+      weight_unit: weight_unit
+    default_param:
+      comments: ""
+      custom_fields: {}
+      part_number: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_module
+    lookup: modules
+    primary_key: device.name-module_bay.name-module_type.model
+    data: modules
+    var_prefix: netbox_modules_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      device: device.name
+      module_bay:
+        name: module_bay.name
+        device: device.name
+      module_type: module_type.model
+    opt_param:
+      asset_tag: asset_tag
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      serial: serial
+      status: status.value
+      tags: tags
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      serial: ""
+      status: "active"
+
+  - name: netbox.netbox.netbox_vrf
+    lookup: vrfs
+    primary_key: name
+    data: vrfs
+    var_prefix: netbox_vrfs_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      enforce_unique: enforce_unique
+      export_targets: export_targets
+      import_targets: import_targets
+      rd: rd
+      tags: tags
+      tenant: tenant
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      enforce_unique: true
+      export_targets: []
+      import_targets: []
+
+  - name: netbox.netbox.netbox_ip_address
+    lookup: ip-addresses
+    primary_key: address
+    data: ip_addresses
+    var_prefix: netbox_ip_addresses_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      address: address
+    opt_param:
+      assigned_object:
+        device: assigned_object.device.name
+        name: assigned_object.name
+        virtual_machine: assigned_object.virtual_machine.name
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      dns_name: dns_name
+      interface: interface
+      nat_inside: nat_inside
+      prefix: prefix
+      role: role
+      status: status.value
+      tags: tags
+      tenant: tenant
+      vrf: vrf.name
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      status: active
+      dns_name: ""
+
+  - name: netbox.netbox.netbox_prefix
+    lookup: prefixes
+    primary_key: prefix
+    data: prefixes
+    var_prefix: netbox_prefixes_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      prefix: prefix
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      family: family.value
+      is_pool: is_pool
+      mark_utilized: mark_utilized
+      parent: parent
+      prefix_length: prefix_length
+      scope: scope
+      scope_type: scope_type
+      status: status.value
+      tags: tags
+      tenant: tenant
+      vlan: 
+        name: vlan.name
+      vrf: vrf.name
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      status: active
+      is_pool: false
+      mark_utilized: false
+      family: 4
+
+  - name: netbox.netbox.netbox_vlan
+    lookup: vlans
+    primary_key: name
+    data: vlans
+    var_prefix: netbox_vlans_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      site: site.name
+      status: status.value
+      tags: tags
+      tenant: tenant
+      vid: vid
+      vlan_group: group.name
+      vlan_role: role
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      status: active
+
+# requires pynetbox 7.4.1
+#  - name: netbox.netbox.netbox_cable
+#    lookup: cables
+#    primary_key: a_terminations.list.device.name-a_terminations.list.name-b_terminations.list.device.name-b_terminations.list.name
+#    data: cables
+#    var_prefix: netbox_cables_
+#    aggregation: "{{ netbox_devices }}"
+#    req_param:
+#      termination_a: termination_a
+#        #        device: a_terminations.list.device.name
+#        #        name: a_terminations.list.name
+#          #      termination_a_type: termination_a_type
+#      termination_b: termination_b
+#        #        device: b_terminations.list.device.name
+#        #        name: b_terminations.list.name
+#          #      termination_b_type: termination_b_type
+#    opt_param:
+#      color: color
+#      comments: comments
+#      custom_fields: custom_fields
+#      description: description
+#      label: label
+#      length: length
+#      length_unit: length_unit.value
+#      status: status.value
+#      tags: tags
+#      tenant: tenant
+#      type: type
+#    default_param:
+#      comments: ""
+#      custom_fields: {}
+#      description: ""
+#      tags: []
+#      status: connected
+#

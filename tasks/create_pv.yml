@@ -1,0 +1,44 @@
+---
+
+#  - name: Create Directory
+#    kubernetes.core.k8s_exec:
+#      namespace: "{{ netbox_release_namespace }}"
+#      pod: gen-vol-path
+#      command: "mkdir /tmp/{{ item.key }}"
+
+  - name: Create Volume
+    kubernetes.core.k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: PersistentVolume
+        metadata:
+          name: "{{ item.key }}"
+          namespace: "{{ netbox_release_namespace }}"
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          capacity:
+            storage: "{{ item.value }}"
+            #        securityContext:
+            #          runAsUser: 1000
+            #          runAsGroup: 1000
+            #          fsGroup: 1000
+            #          fsGroupChangePolicy: "Always"
+          claimRef:
+            kind: PersistentVolumeClaim
+            name: "{{ item.key }}"
+            namespace: "{{ netbox_release_namespace }}"
+          local:
+          #          path: /tmp/
+            # Need to create dir first! Set UID/GID?
+            path: "/tmp/{{ item.key }}"
+          nodeAffinity:
+            required:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: non-existent-label
+                  operator: DoesNotExist
+          persistentVolumeReclaimPolicy: Retain
+          storageClassName: "{{ netbox_storage_class }}"
+          volumeMode: Filesystem

@@ -1,2 +1,299 @@
 ---
 # tasks file for netbox
+- name: Build Netbox
+  include_tasks: build.yml
+  tags:
+    - never
+    - netbox_build
+
+- name: Add a repository
+  kubernetes.core.helm_repository:
+    name: "{{ netbox_name }}"
+    repo_url: "{{ netbox_repo_url }}"
+
+- name: Remove Netbox
+  kubernetes.core.helm:
+    name: "{{ netbox_name }}"
+    release_namespace: "{{ netbox_release_namespace }}"
+    state: absent
+    wait: true
+  tags:
+    - never
+    - netbox_cleanup
+
+- name: Remove PersistenVolume
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: "{{ item.key }}"
+          #        namespace: "{{ netbox_release_namespace }}"
+  loop: "{{ volumes | dict2items }}"
+  vars:
+    volumes:
+      data-netbox-postgresql-0: 8Gi
+      netbox-media: 1Gi
+      redis-data-netbox-redis-master-0: 8Gi
+      redis-data-netbox-redis-replicas-0: 8Gi
+      redis-data-netbox-redis-replicas-1: 8Gi
+      redis-data-netbox-redis-replicas-2: 8Gi
+  tags:
+    - never
+    - netbox_cleanup
+
+- name: Remove namespace for Netbox
+  kubernetes.core.k8s:
+    name: "{{ netbox_release_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: absent
+    wait: true
+  tags:
+    - never
+    - netbox_cleanup
+
+- name: Create namespace for Netbox
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ netbox_release_namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: privileged
+
+- name: Deploy Netbox
+  kubernetes.core.helm:
+    name: "{{ netbox_name }}"
+    chart_ref: "{{ netbox_chart_ref }}"
+    chart_version: "{{ netbox_chart_version }}"
+    release_namespace: "{{ netbox_release_namespace }}"
+    create_namespace: false
+    values:
+      image:
+        registry: essigke
+        repository: netbox
+        tag: latest-plugins
+        pullPolicy: Always
+      secretKey: "{{ netbox_secret_key }}"
+      superuser:
+        name: "{{ netbox_superuser_username }}"
+        password: "{{ netbox_superuser_password }}"
+        email: "{{ netbox_superuser_email }}"
+        apiToken: "{{ netbox_superuser_api_token }}"
+      global:
+        storageClass: "{{ netbox_storage_class }}"
+      redis:
+        enabled: true
+        global:
+          redis:
+            password: "{{ netbox_redis_password }}"
+      postgresql:
+        enabled: true
+          #        rbac:
+          #          create: true
+        auth:
+          #          database: mynetbox
+          #          username: mynetbox
+          password: "{{ netbox_postgresql_password }}"
+        global:
+          postgresql:
+            auth:
+              #              database: mynetbox
+              #              username: mynetbox
+              password: "{{ netbox_postgresql_password }}"
+                #        passwordUpdateJob:
+                #          enabled: true
+      service:
+        type: LoadBalancer
+        loadBalancerIP: "{{ netbox_loadbalancer_ip }}"
+        loadBalancerClass:  "{{ netbox_loadbalancer_class }}"
+      plugins:
+         - "netbox_routing"
+         - "netbox_dns"
+         - "netbox_kea"
+         - "netbox_secrets"
+         - "netbox_topology_view"
+          #       pluginsConfig:
+          #- name: Create pod to create directories
+          #  kubernetes.core.k8s:
+          #    state: present
+          #    namespace: "{{ netbox_release_namespace }}"
+          #    definition:
+          #      apiVersion: v1
+          #      kind: Pod
+          #      metadata:
+          #        name: gen-vol-path
+          #        namespace: "{{ netbox_release_namespace }}"
+          #      spec:
+          #        containers:
+          #          - name: gen-vol-path
+          #            image: busybox:latest
+          #            imagePullPolicy: IfNotPresent
+
+          #- name: Create a PersistenVolume
+          #  include_tasks: create_pv.yml
+          #  loop: "{{ volumes | dict2items }}"
+          #  vars:
+          #    volumes:
+          #      data-netbox-postgresql-0: 8Gi
+          #      netbox-media: 1Gi
+          #      redis-data-netbox-redis-master-0: 8Gi
+          #      redis-data-netbox-redis-replicas-0: 8Gi
+          #      redis-data-netbox-redis-replicas-1: 8Gi
+          #      redis-data-netbox-redis-replicas-2: 8Gi
+
+
+        #- name: Remove Pod
+        #  kubernetes.core.k8s:
+        #    state: absent
+        #    api_version: v1
+        #    kind: Pod
+        #    namespace: "{{ netbox_release_namespace }}"
+        #    name: gen-vol-path
+
+
+- name: Netbox takes ages to get ready (15min?)
+  #  ansible.builtin.pause:
+  #    minutes: 12
+  ansible.builtin.wait_for:
+    sleep: 60
+    host: "{{ netbox_loadbalancer_ip }}"
+    port: 80
+
+- name: Create permission with all parameters
+  netbox.netbox.netbox_permission:
+    netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+    netbox_token: "{{ netbox_superuser_api_token }}"
+    validate_certs: false
+    data:
+      name: Ansible permission
+      description: Ansible Configuration Management System
+      enabled: true
+      actions:
+        - view
+        - add
+        - change
+        - delete
+        - extreme_administration
+      object_types:
+        - dcim.site
+        - dcim.location
+        - dcim.devicetype
+        - dcim.manufacturer
+        - dcim.platform
+        - dcim.devicerole
+        - dcim.device
+        - dcim.interface
+        - dcim.cable
+        - dcim.module
+        - dcim.moduletype
+        - dcim.modulebay
+        - dcim.frontport
+        - dcim.rearport
+        - dcim.powerport
+        - dcim.consoleport
+        - dcim.consoleserverport
+        - dcim.macaddress
+        - ipam.ipaddress
+        - ipam.vlangroup
+        - ipam.vlan
+        - ipam.prefix
+        - ipam.fhrpgroup
+        - ipam.fhrpgroupassignment
+        - ipam.vrf
+        - virtualization.clustertype
+        - virtualization.cluster
+        - virtualization.clustergroup
+        - virtualization.virtualdisk
+        - virtualization.vminterface
+        - virtualization.virtualmachine
+        - wireless.wirelesslan
+        - wireless.wirelesslink
+        - wireless.wirelesslangroup
+        - dcim.region
+        - dcim.sitegroup
+        - dcim.rack
+        - ipam.service
+        - tenancy.tenant
+        - tenancy.contact
+        - tenancy.contactrole
+        - extras.customfield
+        - extras.customfieldchoiceset
+        - extras.customlink
+        - netbox_routing.staticroute
+        - netbox_dns.nameserver
+        - netbox_dns.zone
+        - netbox_dns.record
+          #      constraints:
+          #         id: 1
+    state: present
+  tags: 
+    - netbox_setup
+    - cluster
+    - cluster_type
+    - module
+    - contact
+    - customfield
+    - vrf
+    - routes
+    - dns
+    - cables
+    - device_interfaces
+    - mac
+    - wlan
+
+- name: Create user for Ansible
+  netbox.netbox.netbox_user:
+    netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+    netbox_token: "{{ netbox_superuser_api_token }}"
+    validate_certs: false
+    data:
+      is_active: true
+      is_staff: false
+      first_name: Ansible
+      last_name: Configuration Management System
+      permissions: Ansible permission
+      username: "{{ netbox_ansible_user }}"
+      password: "{{ netbox_ansible_password }}"
+    state: present
+  tags: netbox_setup
+
+- name: Create token within NetBox with only required information
+  netbox.netbox.netbox_token:
+    netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+    netbox_token: "{{ netbox_superuser_api_token }}"
+    validate_certs: false
+    data:
+      user: "{{ netbox_ansible_user }}"
+      key: "{{ netbox_ansible_token }}"
+    state: present
+  tags: netbox_setup
+          
+- name: Setup data in Netbox
+  include_tasks: setup_netbox_dynamic.yml
+    #  include_tasks: setup_netbox.yml
+  tags: 
+    - netbox_setup
+    - device_interfaces
+    - cables
+    - cluster_type
+    - cluster_group
+    - cluster
+    - module
+    - contact
+    - customfield
+    - vm_interfaces
+    - address
+    - device
+    - fhrp
+    - vrf
+    - routes
+    - dns
+    - mac
+    - wlan
+    - prefixes
+    - vlan
