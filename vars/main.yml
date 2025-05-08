@@ -545,6 +545,101 @@ netbox_data_models:
       tags: []
       status: active
 
+  - name: netbox.netbox.netbox_virtual_machine
+    permission: virtualization.virtualmachine
+    lookup: virtual-machines
+    primary_key: name
+    data: virtual_machines
+    var_prefix: netbox_virtual_machines_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+    opt_param:
+      cluster: cluster.name
+      comments: comments
+      config_template: config_template
+      custom_fields: custom_fields
+      description: description
+      device: device.name
+      disk: disk
+      local_context_data: local_context_data
+      memory: memory
+      platform: platform.slug
+      primary_ip4: primary_ip4
+      primary_ip6: primary_ip6
+      serial: serial
+      site: site.name
+      status: status.value
+      tags: tags
+      vcpus: vcpus
+      virtual_machine_role: role.slug
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      status: active
+      serial: ""
+      custom_fields:
+        NetworkVersion: 2
+        OpenVSwitchProtocols:
+          - none
+
+  - name: netbox.netbox.netbox_vm_interface
+    permission: virtualization.vminterface
+    lookup: virtualization-interfaces
+    primary_key: name
+    data: vm_interfaces
+    var_prefix: netbox_vm_interfaces_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields 
+      description: description
+      enabled: enabled
+      mac_address: mac_address
+      mode: mode.value
+      mtu: mtu
+      parent_vm_interface: parent.name
+      primary_mac_address: mac_address
+      tagged_vlans: tagged_vlans.list.name
+      tags: tags
+      untagged_vlan: 
+        name: untagged_vlan.name
+      virtual_machine: virtual_machine.name
+      vm_bridge: 
+        name: bridge.name
+        device: bridge.device.name
+      vrf: vrf.name
+    default_param:
+      custom_fields: {}
+      description: ""
+      enabled: true
+      tags: []
+
+  - name: netbox.netbox.netbox_virtual_disk
+    permission: virtualization.virtualdisk
+    lookup: virtual-disks
+    primary_key: name
+    data: virtual_disks
+    var_prefix: netbox_virtual_disks_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      size: size
+      tags: tags
+      untagged_vlan: 
+        name: untagged_vlan.name
+      virtual_machine: virtual_machine.name
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+
   - name: netbox.netbox.netbox_fhrp_group
     permission: ipam.fhrpgroup
     lookup: fhrp-groups
@@ -902,6 +997,33 @@ netbox_data_models:
       auth_type: wpa-personal
       vlan:
         site: "{{ netbox_default_site }}"
+
+# could not solve the device or virtual_machine name required problem/bug
+  - name: netbox.netbox.netbox_service
+    permission: ipam.service
+    lookup: services
+    primary_key: name-protocol
+    data: services
+    var_prefix: netbox_services_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+      protocol: protocol.value
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      device: device.name
+      ipaddress: ipaddress
+      port: port
+      ports: ports
+      tags: tags
+      virtual_machine: virtual_machine.name
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
 
 # requires pynetbox 7.4.1
 #  - name: netbox.netbox.netbox_cable

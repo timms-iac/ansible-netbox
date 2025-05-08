@@ -11,7 +11,7 @@
 #
     - name: "Some vars from {{ netbox_data_dir }}"
       ansible.builtin.debug:
-        var: query("netbox.netbox.nb_lookup", "interfaces", api_endpoint=ansible_nb_url,token=netbox_ansible_token)
+        var: query("netbox.netbox.nb_lookup", "services", api_endpoint=ansible_nb_url,token=netbox_ansible_token)
       tags:
         - device
 

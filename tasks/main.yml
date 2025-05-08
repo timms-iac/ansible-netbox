@@ -249,10 +249,6 @@
       #        #        - dcim.frontport
       #        #        - dcim.rearport
       #        - ipam.fhrpgroupassignment
-      #        - virtualization.virtualdisk
-      #        - virtualization.vminterface
-      #        - virtualization.virtualmachine
-      #          #        - wireless.wirelesslan
       #          #        - wireless.wirelesslink
       #          #        - wireless.wirelesslangroup
       #          #        - dcim.region
@@ -264,25 +260,7 @@
       #        - netbox_dns.nameserver
       #        - netbox_dns.zone
       #        - netbox_dns.record
-      #          #      constraints:
-      #          #         id: 1
-      #    state: present
-      #  tags: 
-      #    - netbox_setup
-      #    - cluster
-      #    - cluster_type
-      #    - module
-      #    - contact
-      #    - customfield
-      #    - vrf
-      #    - routes
-      #    - dns
-      #    - cables
-      #    - device_interfaces
-      #    - mac
-      #    - wlan
-      #    - device
-      #
+
 - name: Create user for Ansible
   netbox.netbox.netbox_user:
     netbox_url: "http://{{ netbox_loadbalancer_ip }}"
