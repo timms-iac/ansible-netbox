@@ -92,7 +92,7 @@
           {% if output[primary_key][rp] is undefined %}
           {% set _ = output[primary_key].update( { rp: {} } ) %}
           {% endif %}{# output #}
-          {% if params | length > 1 and params[1] != "list" %}{# if params | length > 1 #}
+          {% if params | length > 1 and params[1] != "list" and qr.value[params[0]] is mapping %}{# if params | length > 1 #}
           {% set _ = output[primary_key][rp].update( { rpm: qr.value[params[0]][params[1]] } ) %}
           {% endif %}{# if params | length > 1 #}
           {% endfor %}{# rpm #}
@@ -145,7 +145,9 @@
           {% if params | length > 1 and params[1] == "list" and qr.value[params[0]] is defined and qr.value[params[0]] is iterable and qr.value[params[0]] | length > 0 %}
           {% set tmp = [] %}
           {% for i in qr.value[params[0]] %}
-          {% if params[0] == "nameservers" or params[0] == "zones" %}
+          {% if params[2] == "id" %}
+          {% set _ = tmp.append(i[params[2]]) %}
+          {% elif params[0] == "nameservers" or params[0] == "zones" or item.data == "static_routes" %}
           {% set _ = tmp.append({ params[2]: i[params[2]] }) %}
           {% else %}
           {% set _ = tmp.append({ params[2]: i[params[2]], "site": netbox_default_site }) %}
@@ -354,6 +356,20 @@
         var: netbox_new_items
       tags:
         - device
+
+    - name: Last fixes to netbox_data_hash
+      ansible.builtin.set_fact:
+        netbox_data_hash: |
+          {% set output = netbox_data_hash %}
+          {% for nni in netbox_new_items %}
+          {% if nni.key == "devices" and netbox_data_hash[nni.key][nni.value].primary_ip4 is defined %}
+          {% set _ = output[nni.key][nni.value].pop('primary_ip4') %}
+          {% endif %}
+          {% endfor %}
+          {{ output }}
+      tags:
+        - device
+
 
     - name: "Write tasks file"
       ansible.builtin.template:

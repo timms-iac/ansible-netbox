@@ -998,34 +998,63 @@ netbox_data_models:
       vlan:
         site: "{{ netbox_default_site }}"
 
-          ## could not solve the device or virtual_machine name required problem/bug
-          #  - name: netbox.netbox.netbox_service
-          #    permission: ipam.service
-          #    lookup: services
-          #    primary_key: name-protocol
-          #    data: services
-          #    var_prefix: netbox_services_
-          #    aggregation: "{{ netbox_devices }}"
-          #    req_param:
-          #      name: name
-          #      protocol: protocol.value
-          #    opt_param:
-          #      comments: comments
-          #      custom_fields: custom_fields
-          #      description: description
-          #      device: device.name
-          #      ipaddress: ipaddress
-          #      port: port
-          #      ports: ports
-          #      tags: tags
-          #      virtual_machine: virtual_machine.name
-          #    default_param:
-          #      comments: ""
-          #      custom_fields: {}
-          #      description: ""
-          #      tags: []
-          #
-          ## requires pynetbox 7.4.1
+# could not solve the device or virtual_machine name required problem/bug with netbox.netbox.netbox_service
+  - name: "Services"
+    permission: ipam.service
+    rest_path: /api/ipam/services/
+      #    lookup: services
+    primary_key: name-protocol.value-device.name
+    data: services
+    var_prefix: netbox_services_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+      protocol: protocol.value
+      device:
+        name:  device.name
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      ipaddresses: ipaddresses.list.id
+      ports: ports
+      tags: tags
+      id: id
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: "VM Services"
+    permission: ipam.service
+    rest_path: /api/ipam/services/
+      #    lookup: services
+    primary_key: name-protocol.value-virtual_machine.name
+    data: vm_services
+    var_prefix: netbox_vm_services_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      name: name
+      protocol: protocol.value
+      virtual_machine: 
+        name: virtual_machine.name
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      ipaddresses: ipaddresses.list.id
+      ports: ports
+      tags: tags
+      id: id
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+
+
+# requires pynetbox 7.4.1
 #  - name: netbox.netbox.netbox_cable
 #    permission: dcim.cable
 #    lookup: cables
@@ -1065,24 +1094,27 @@ netbox_data_models:
   - name: "Static Routes"
     rest_path: /api/plugins/routing/staticroute/
     permission: netbox_routing.staticroute
-    primary_key: name
+    primary_key: prefix-next_hop
     data: static_routes
     var_prefix: netbox_static_routes_
     aggregation: "{{ netbox_sites }}"
     req_param:
-      name: name
+      prefix: prefix
+      next_hop: next_hop
     opt_param:
+      devices: devices.list.name
+      name: name
+      vrf: 
+        name: vrf.name
+      metric: metric
+      permanent: permanent
       comments: comments
-      custom_fields: custom_fields
       description: description
-      status: status.value
-      tags: tags
     default_param:
       comments: ""
-      custom_fields: {}
       description: ""
-      tags: []
-      status: active
+      metric: 1
+      permanent: false
 
   - name: "DNS Nameservers"
     rest_path: /api/plugins/netbox-dns/nameservers/
