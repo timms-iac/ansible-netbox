@@ -11,10 +11,22 @@
 #
     - name: "Some vars from {{ netbox_data_dir }}"
       ansible.builtin.debug:
-        var: query("netbox.netbox.nb_lookup", "services", api_endpoint=ansible_nb_url,token=netbox_ansible_token)
+        #        msg: ""
+        var: query("netbox.netbox.nb_lookup", "sites", api_endpoint=ansible_nb_url,token=netbox_ansible_token)
       tags:
         - device
 
+    - name: "Token for DNS Nameservers"
+      ansible.builtin.set_fact:
+        netbox_token: 'Token {{netbox_ansible_token}}'
+      tags:
+        - device
+
+    - name: "Get token DNS Nameservers"
+      ansible.builtin.debug: 
+        var: netbox_token
+      tags:
+        - device
 
     - name: Aggregate Variables
       ansible.builtin.set_fact: 
@@ -35,7 +47,20 @@
           {% set data = {} %}
           {% for item in netbox_data_models %}
           {% set output = {} %}
-          {% for qr in query("netbox.netbox.nb_lookup", item.lookup, api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% set query_results = [] %}
+          {% if item.lookup is defined %}
+          {% set query_results = query("netbox.netbox.nb_lookup", item.lookup, api_endpoint=ansible_nb_url,token=netbox_ansible_token) %}
+          {% else %}
+          {% set tmp_q = [] %}
+          {% set tmp_q = query('ansible.builtin.url', ansible_nb_url + item.rest_path + "?limit=1000", headers={'Authorization':netbox_token })[0] | from_json %}
+          {% for tq in tmp_q.results %}
+          {% if tq.name != "@" %}
+          {% set _ = query_results.append({ 'value': tq }) %}
+          {% endif %}
+          {% endfor %}
+          {% endif %}
+          {% for qr in query_results %}
+          {% if qr is mapping and qr.value is defined %}
           {# ### The primary_key can be composed of different keys, separated with - ### #}
           {% set pks = item.primary_key.split("-") %}
           {% set tmp = [] %}
@@ -58,6 +83,7 @@
           {% set primary_key = tmp | join(" ") %}
           {% if output[primary_key] is not defined %}
           {% set _ = output.update({ primary_key: {} }) %}
+          {% endif %}{# if output[primary_key] is not defined #}
           {# ### One or more parameters may be required ### #}
           {% for rp in item.req_param %}
           {% if item.req_param[rp] is mapping %}
@@ -116,10 +142,14 @@
           {% else %}{# mapping #}
           {% set params = item.opt_param[op].split(".") %}
           {% if qr.value[params[0]] is defined and qr.value[params[0]] is not none %}
-          {% if params | length > 1 and params[1] == "list" and qr.value[params[0]] is defined and qr.value[params[0]] is iterable and qr.value[params[0]]| length > 0 %}
+          {% if params | length > 1 and params[1] == "list" and qr.value[params[0]] is defined and qr.value[params[0]] is iterable and qr.value[params[0]] | length > 0 %}
           {% set tmp = [] %}
           {% for i in qr.value[params[0]] %}
+          {% if params[0] == "nameservers" or params[0] == "zones" %}
+          {% set _ = tmp.append({ params[2]: i[params[2]] }) %}
+          {% else %}
           {% set _ = tmp.append({ params[2]: i[params[2]], "site": netbox_default_site }) %}
+          {% endif %}
           {% endfor %}{# i #}
           {% set _ = output[primary_key].update({ op: tmp | sort(attribute=params[2])}) %}
           {% elif params | length > 1 and op == "untagged_vlan" %}
@@ -132,7 +162,8 @@
           {% endif %}{# if qr.value[params[0]] is defined #}
           {% endif %}{# mapping #}
           {% endfor %}{# op #}
-          {% endif %}{# if output[primary_key] is not defined #}
+          {# ############# #}
+          {% endif %}
           {% endfor %}{# qr #}
           {% set _ = data.update({ item.data: output }) %}
           {% endfor %}{# item #}
@@ -159,6 +190,25 @@
           {% set odata = {} %}
           {% for item in netbox_data_models %}
           {% set output = {} %}
+          {# ### Autogenerate DNS Records ### #}
+          {% if item.data == "dns_records" %}
+          {% for ip in netbox_lookup.ip_addresses %}
+          {% if netbox_lookup.ip_addresses[ip].dns_name is defined and netbox_lookup.ip_addresses[ip].dns_name != "" %}
+          {% set dns = netbox_lookup.ip_addresses[ip].dns_name | split('.',1) %}
+          {% set _ = output.update({ dns | first : {} }) %}
+          {% set _ = output[dns | first].update({'name': dns | first, 'value': netbox_lookup.ip_addresses[ip].address | split('/',1) | first, 'zone': { 'name': dns | last } }) %}
+          {% for dp in item.default_param %}
+          {% if output[dns | first][dp] is undefined %}
+          {% set _ = output[dns | first].update({dp: item.default_param[dp] }) %}
+          {% endif %}
+          {% endfor %}
+          {% if output[dns | first].id is undefined and netbox_lookup[item.data][dns | first].id is defined %}
+          {% set _ = output[dns | first].update({'id': netbox_lookup[item.data][dns | first].id }) %}
+          {% endif %}
+          {% endif %}
+          {% endfor %}
+          {% endif %}
+          {# ### Process normal data ### #}
           {% for data in netbox_data[item.data] %}
           {% if data["slug"] is undefined and item.opt_param["slug"] is defined %}
           {% set _ = data.update({ "slug": data[item.primary_key] | split(" ") | join("") | split(".") | join("-") | lower }) %}
@@ -219,6 +269,12 @@
           {% set _ = data.update({ flt: data[flt] | map(item.filter[flt]) | join }) %}
           {% endif %}
           {% endfor %}{# flt #}
+          {% endif %}
+          {% if item.opt_param.id is defined and data.id is undefined and netbox_lookup[item.data][primary_key].id is defined %}
+          {% set _ = data.update({ "id": netbox_lookup[item.data][primary_key].id }) %}
+          {% endif %}
+          {% if item.opt_param.zones is defined and data.zones is undefined and netbox_lookup[item.data][primary_key].zones is defined %}
+          {% set _ = data.update({ "zones": netbox_lookup[item.data][primary_key].zones }) %}
           {% endif %}
           {% set _ = output.update({ primary_key: data }) %}
           {% endfor %}{# data #}

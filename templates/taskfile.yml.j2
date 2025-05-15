@@ -2,6 +2,22 @@
 {% for nbm in netbox_data_models %}
 {% for nni in netbox_new_items %}
 {% if nni.key == nbm.data %}
+{% if nbm.rest_path is defined %}
+
+    - name: "Add {{ nni.key }}: {{ nni.value }}"
+      ansible.builtin.uri:
+        url: "http://{{ netbox_loadbalancer_ip }}{{ nbm.rest_path }}"
+        headers:
+          Authorization: "{{ netbox_token }}"
+          Content-Type: application/json
+        method: POST
+        status_code: 201
+        body_format: json
+        body: [ {{ netbox_data_hash[nni.key][nni.value] }} ]
+      ignore_errors: true
+
+{% else %}
+
     - name: "Add {{ nni.key }}: {{ nni.value }}"
       {{ nbm.name }}:
         netbox_url: "http://{{ netbox_loadbalancer_ip }}"
@@ -9,12 +25,29 @@
         data: "{{ netbox_data_hash[nni.key][nni.value] }}"
 
 {% endif %}
-{% endfor %}
-{% endfor %}
+{% endif %}
+{% endfor %}{# nni #}
+{% endfor %}{# nbm #}
 
 {% for nbd in netbox_diff %}
 {% for nbm in netbox_data_models %}
 {% if nbd.item.key == nbm.data %}
+{% if nbm.rest_path is defined %}
+
+    - name: "Update {{ nbd.item.key }}: {{ nbd.item.value }}"
+      ansible.builtin.uri:
+        url: "http://{{ netbox_loadbalancer_ip }}{{ nbm.rest_path }}"
+        headers:
+          Authorization: "{{ netbox_token }}"
+          Content-Type: application/json
+        method: PUT
+        status_code: 200
+        body_format: json
+        body: [ {{ netbox_data_hash[nbd.item.key][nbd.item.value] }} ]
+      ignore_errors: true
+
+{% else %}
+
     - name: "Update {{ nbd.item.key}}: {{nbd.item.value}}"
       {{ nbm.name }}:
         netbox_url: "http://{{ netbox_loadbalancer_ip }}"
@@ -22,5 +55,6 @@
         data: "{{ netbox_data_hash[nbd.item.key][nbd.item.value] }}"
 
 {% endif %}
-{% endfor %}
-{% endfor %}
+{% endif %}
+{% endfor %}{# nbm #}
+{% endfor %}{# nbd #}

@@ -998,34 +998,34 @@ netbox_data_models:
       vlan:
         site: "{{ netbox_default_site }}"
 
-# could not solve the device or virtual_machine name required problem/bug
-  - name: netbox.netbox.netbox_service
-    permission: ipam.service
-    lookup: services
-    primary_key: name-protocol
-    data: services
-    var_prefix: netbox_services_
-    aggregation: "{{ netbox_devices }}"
-    req_param:
-      name: name
-      protocol: protocol.value
-    opt_param:
-      comments: comments
-      custom_fields: custom_fields
-      description: description
-      device: device.name
-      ipaddress: ipaddress
-      port: port
-      ports: ports
-      tags: tags
-      virtual_machine: virtual_machine.name
-    default_param:
-      comments: ""
-      custom_fields: {}
-      description: ""
-      tags: []
-
-# requires pynetbox 7.4.1
+          ## could not solve the device or virtual_machine name required problem/bug
+          #  - name: netbox.netbox.netbox_service
+          #    permission: ipam.service
+          #    lookup: services
+          #    primary_key: name-protocol
+          #    data: services
+          #    var_prefix: netbox_services_
+          #    aggregation: "{{ netbox_devices }}"
+          #    req_param:
+          #      name: name
+          #      protocol: protocol.value
+          #    opt_param:
+          #      comments: comments
+          #      custom_fields: custom_fields
+          #      description: description
+          #      device: device.name
+          #      ipaddress: ipaddress
+          #      port: port
+          #      ports: ports
+          #      tags: tags
+          #      virtual_machine: virtual_machine.name
+          #    default_param:
+          #      comments: ""
+          #      custom_fields: {}
+          #      description: ""
+          #      tags: []
+          #
+          ## requires pynetbox 7.4.1
 #  - name: netbox.netbox.netbox_cable
 #    permission: dcim.cable
 #    lookup: cables
@@ -1061,3 +1061,107 @@ netbox_data_models:
 #      tags: []
 #      status: connected
 #
+
+  - name: "Static Routes"
+    rest_path: /api/plugins/routing/staticroute/
+    permission: netbox_routing.staticroute
+    primary_key: name
+    data: static_routes
+    var_prefix: netbox_static_routes_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      status: status.value
+      tags: tags
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      status: active
+
+  - name: "DNS Nameservers"
+    rest_path: /api/plugins/netbox-dns/nameservers/
+    permission: netbox_dns.nameserver
+    primary_key: name
+    data: dns_nameservers
+    var_prefix: netbox_dns_nameservers_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      tags: tags      
+      id: id
+      zones: zones.list.name
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: "DNS Zones"
+    rest_path: /api/plugins/netbox-dns/zones/
+    permission: netbox_dns.zone
+    primary_key: name
+    data: dns_zones
+    var_prefix: netbox_dns_zones_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      view: 
+        name: view.name
+      nameservers: nameservers.list.name
+      soa_ttl: soa_ttl
+      soa_refresh: soa_refresh
+      soa_retry: soa_retry
+      soa_expire: soa_expire
+      soa_minimum: soa_minimum
+      soa_mname:
+        name: soa_mname.name
+      soa_rname: soa_rname
+      custom_fields: custom_fields
+      description: description
+      tags: tags
+      id: id
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+      soa_ttl: 86499
+      soa_refresh: 43200
+      soa_retry: 7200
+      soa_expire: 2419200
+      soa_minimum: 3600
+      soa_rname: "admin.{{ domain_name }}"
+
+  - name: "DNS Records"
+    rest_path: /api/plugins/netbox-dns/records/
+    permission: netbox_dns.record
+    primary_key: name
+    data: dns_records
+    var_prefix: netbox_dns_records_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      tags: tags
+      id: id
+      value: value
+      status: status
+      type: type
+      zone: 
+        name: zone.name
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+      type: A
+      status: active

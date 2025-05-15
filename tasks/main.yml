@@ -257,9 +257,6 @@
       #          #        - ipam.service
       #          #        - extras.customlink
       #        - netbox_routing.staticroute
-      #        - netbox_dns.nameserver
-      #        - netbox_dns.zone
-      #        - netbox_dns.record
 
 - name: Create user for Ansible
   netbox.netbox.netbox_user:
