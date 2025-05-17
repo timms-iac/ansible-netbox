@@ -203,6 +203,7 @@
           {% for out in netbox_data_raw.keys() %}
           {# ### input filters ### #}
           {% set _ = output.update({ out: [] }) %}
+          {# ### cables ### #}
           {% if out == "cables" %}
           {% for cable in netbox_data_raw[out] %}
           {% if cable.length is defined %}
@@ -254,12 +255,11 @@
           {% endif %}
           {% else %}
           {% if fga.interface.name is defined and fga.interface.device.name is defined %}
-          {% set tmp = query("netbox.netbox.nb_lookup", netbox_type_lookup[fga.interface_type], api_filter="name=" + fga.interface.name + " device=" + fga.interface.virtual_machine.name, api_endpoint=ansible_nb_url, token=netbox_ansible_token) | map(attribute="key") | join(",") %}
+          {% set tmp = query("netbox.netbox.nb_lookup", netbox_type_lookup[fga.interface_type], api_filter="name=" + fga.interface.name + " device=" + fga.interface.device.name, api_endpoint=ansible_nb_url, token=netbox_ansible_token) | map(attribute="key") | join(",") %}
           {% set _ = fga.update({"interface_id": tmp | int }) %}
           {% set _ = fga["interface"].update({"id": tmp | int }) %}
           {% endif %}
           {% endif %}
-          {# set _ = fga.pop("interface") #}
           {% set _ = output[out].append(fga) %}
           {% endfor %}
           {# ### device_interfaces ### #}
@@ -281,6 +281,21 @@
           {% endif %}
           {% set _ = output[out].append(di) %}
           {% endfor %}{# di #}
+          {# ### ip_addresses ### #}
+          {% elif out == "ip_addresses" and netbox_data_raw[out] is defined %}
+          {% for ip in netbox_data_raw[out] %}
+          {% if ip.assigned_object is defined and ip.assigned_object_type is defined and ip.assigned_object is mapping and ip.assigned_object_id is undefined %}
+          {% set f = [] %}
+          {% for key, value in ip.assigned_object.items() | list %}
+          {% set _ = f.append(key + "=" + value | string ) %}
+          {% endfor %}{# for key,value #}
+          {% set filter = f | join(" ") %}
+          {% set tmp = query("netbox.netbox.nb_lookup", netbox_type_lookup[ip.assigned_object_type], api_filter=filter, api_endpoint=ansible_nb_url, token=netbox_ansible_token) | map(attribute="key") | join(",") %}
+          {% set _ = ip.update({ "assigned_object_id": tmp | int }) %}
+          {% endif %}
+          {% set _ = output[out].append(ip) %}
+          {% endfor %}{# ip #}
+          {# ### copy data ### #}
           {% else %}{# out #}
           {% set _ = output.update({ out: netbox_data_raw[out] }) %}
           {% endif %}{# out #}
@@ -380,6 +395,7 @@
           {% endif %}
           {% endfor %}{# pk #}
           {% set primary_key = tmp | join(" ") %}
+          {# ### Some hacks on data structures ### #}
           {% if item.opt_param.id is defined and data.id is undefined and netbox_lookup[item.data][primary_key].id is defined %}
           {% set _ = data.update({ "id": netbox_lookup[item.data][primary_key].id }) %}
           {% endif %}
@@ -390,6 +406,16 @@
           {% set _ = data.pop("group") %}
           {% set _ = data.pop("interface") %}
           {% endif %}
+          {% if item.data == "ip_addresses" and data.assigned_object_id is defined and data.role is defined %}
+          {% set _ = data.pop('assigned_object') %}
+          {% endif %}
+          {% if item.data == "ip_addresses" and data.assigned_object_id is undefined and data.role.value is undefined and netbox_lookup[item.data][primary_key].assigned_object_id is defined%}
+          {% set _ = data.update({ "assigned_object_id": netbox_lookup[item.data][primary_key].assigned_object_id }) %}
+          {% endif %}
+          {% if item.data == "ip_addresses" and data.assigned_object_type is undefined and data.role.value is undefined and netbox_lookup[item.data][primary_key].assigned_object_type is defined%}
+          {% set _ = data.update({ "assigned_object_type": netbox_lookup[item.data][primary_key].assigned_object_type }) %}
+          {% endif %}
+          {# ############################################### #}
           {% set _ = output.update({ primary_key: data }) %}
           {% endfor %}{# data #}
           {% set _ = odata.update({ item.data: output }) %}
@@ -474,6 +500,9 @@
           {% endif %}
           {% if nni.key == "device_interfaces" and netbox_data_hash[nni.key][nni.value].primary_mac_address is defined %}
           {% set _ = output[nni.key][nni.value].pop('primary_mac_address') %}
+          {% endif %}
+          {% if nni.key == "ip_addresses" and netbox_data_hash[nni.key][nni.value].assigned_object_id is defined and netbox_data_hash[nni.key][nni.value].assigned_object is defined %}
+          {% set _ = output[nni.key][nni.value].pop('assigned_object') %}
           {% endif %}
           {% endfor %}
           {{ output }}

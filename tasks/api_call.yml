@@ -1,4 +1,9 @@
 ---
+#
+# THIS IS NOT USED ANYMORE - Keep it as record how to do idempotent API calls
+#
+#
+#
 # https://www.logsec.cloud/posts/ansible-making-api-calls-idempotent/
 - name: Get Data
   ansible.builtin.uri:
