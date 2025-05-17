@@ -220,10 +220,10 @@
       object_types: |
         {% set output = [] %}
         {% for ndm in netbox_data_models %}
-        {% if ndm.permission is string %}
-        {% set _ = output.append(ndm.permission) %}
+        {% if ndm.type is string %}
+        {% set _ = output.append(ndm.type) %}
         {% else %}
-        {% for ndml in ndm.permission %}
+        {% for ndml in ndm.type %}
         {% set _ = output.append(ndml) %}
         {% endfor %}
         {% endif %}
@@ -248,7 +248,6 @@
 
       #        #        - dcim.frontport
       #        #        - dcim.rearport
-      #        - ipam.fhrpgroupassignment
       #          #        - wireless.wirelesslink
       #          #        - wireless.wirelesslangroup
       #          #        - dcim.region
@@ -256,7 +255,6 @@
       #          #        - dcim.rack
       #          #        - ipam.service
       #          #        - extras.customlink
-      #        - netbox_routing.staticroute
 
 - name: Create user for Ansible
   netbox.netbox.netbox_user:

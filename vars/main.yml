@@ -2,7 +2,7 @@
 # vars file for netbox
 netbox_data_models:
   - name: netbox.netbox.netbox_custom_field_choice_set
-    permission: extras.customfieldchoiceset
+    type: extras.customfieldchoiceset
     lookup: custom-field-choice-sets
     primary_key: name
     data: custom_field_choice_sets
@@ -20,7 +20,7 @@ netbox_data_models:
       order_alphabetically: false
 
   - name: netbox.netbox.netbox_custom_field
-    permission: extras.customfield
+    type: extras.customfield
     lookup: custom-fields
     primary_key: name
     data: custom_fields
@@ -58,7 +58,7 @@ netbox_data_models:
       weight: 100
 
   - name: netbox.netbox.netbox_site
-    permission: dcim.site
+    type: dcim.site
     lookup: sites
     primary_key: name
     data: sites
@@ -97,7 +97,7 @@ netbox_data_models:
       shipping_address: ""
 
   - name: netbox.netbox.netbox_contact_role
-    permission: tenancy.contactrole
+    type: tenancy.contactrole
     lookup: contact-roles
     primary_key: name
     data: contact_roles
@@ -116,7 +116,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_contact_group
-    permission: tenancy.contactgroup
+    type: tenancy.contactgroup
     lookup: contact-groups
     primary_key: name
     data: contact_groups
@@ -136,7 +136,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_tenant_group
-    permission: tenancy.tenantgroup
+    type: tenancy.tenantgroup
     lookup: tenant-groups
     primary_key: name
     data: tenant_groups
@@ -156,7 +156,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_tenant
-    permission: tenancy.tenant
+    type: tenancy.tenant
     lookup: tenants
     primary_key: name
     data: tenants
@@ -178,7 +178,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_contact
-    permission: 
+    type: 
       - tenancy.contact
       - tenancy.contactassignment
     lookup: contacts
@@ -211,7 +211,7 @@ netbox_data_models:
       title: ""
 
   - name: netbox.netbox.netbox_location
-    permission: dcim.location
+    type: dcim.location
     lookup: locations
     primary_key: name
     data: locations
@@ -238,7 +238,7 @@ netbox_data_models:
       site: "{{ netbox_default_site }}"
 
   - name: netbox.netbox.netbox_device_role
-    permission: dcim.devicerole
+    type: dcim.devicerole
     lookup: device-roles
     primary_key: name
     data: device_roles
@@ -261,7 +261,7 @@ netbox_data_models:
       color: 9e9e9e
 
   - name: netbox.netbox.netbox_manufacturer
-    permission: dcim.manufacturer
+    type: dcim.manufacturer
     lookup: manufacturers
     primary_key: name
     data: manufacturers
@@ -280,7 +280,7 @@ netbox_data_models:
       custom_fields: {}
 
   - name: netbox.netbox.netbox_platform
-    permission: dcim.platform
+    type: dcim.platform
     lookup: platforms
     primary_key: name
     data: platforms
@@ -303,7 +303,7 @@ netbox_data_models:
       custom_fields: {}
 
   - name: netbox.netbox.netbox_device_type
-    permission: dcim.devicetype
+    type: dcim.devicetype
     lookup: device-types
     primary_key: model
     data: device_types
@@ -335,7 +335,7 @@ netbox_data_models:
       u_height: 1.0
 
   - name: netbox.netbox.netbox_device
-    permission: dcim.device
+    type: dcim.device
     lookup: devices
     primary_key: name
     data: devices
@@ -387,7 +387,7 @@ netbox_data_models:
       site: "{{ netbox_default_site }}"
 
   - name: netbox.netbox.netbox_device_interface
-    permission: dcim.interface
+    type: dcim.interface
     lookup: interfaces
     primary_key: device.name-name
     data: device_interfaces
@@ -439,19 +439,9 @@ netbox_data_models:
       custom_fields:
         EEE: false
         LLDP: false
-    filter:
-      mac_address: upper
-      primary_mac_address: upper
-      mode: lower
-          #      type: upper
-          #    suppress_if_undefined:
-          #      primary_mac_address:
-          #        mac_addresses: mac_address
-          #      mac_address:
-          #        mac_addresses: mac_address
 
   - name: netbox.netbox.netbox_mac_address
-    permission: dcim.macaddress
+    type: dcim.macaddress
     lookup: mac
     primary_key: mac_address
     data: mac_addresses
@@ -472,15 +462,9 @@ netbox_data_models:
       custom_fields: {}
       description: ""
       tags: []
-        #    filter:
-        #      mac_address: upper
-        #    suppress_if_undefined:
-        #      assigned_object:
-        #        device: devices
-        #        name: interfaces
 
   - name: netbox.netbox.netbox_cluster_type
-    permission: virtualization.clustertype
+    type: virtualization.clustertype
     lookup: cluster-types
     primary_key: name
     data: cluster_types
@@ -499,7 +483,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_cluster_group
-    permission: virtualization.clustergroup
+    type: virtualization.clustergroup
     lookup: cluster-groups
     primary_key: name
     data: cluster_groups
@@ -518,7 +502,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_cluster
-    permission: virtualization.cluster
+    type: virtualization.cluster
     lookup: clusters
     primary_key: name
     data: clusters
@@ -546,7 +530,7 @@ netbox_data_models:
       status: active
 
   - name: netbox.netbox.netbox_virtual_machine
-    permission: virtualization.virtualmachine
+    type: virtualization.virtualmachine
     lookup: virtual-machines
     primary_key: name
     data: virtual_machines
@@ -586,9 +570,9 @@ netbox_data_models:
           - none
 
   - name: netbox.netbox.netbox_vm_interface
-    permission: virtualization.vminterface
+    type: virtualization.vminterface
     lookup: virtualization-interfaces
-    primary_key: name
+    primary_key: virtual_machine.name-name
     data: vm_interfaces
     var_prefix: netbox_vm_interfaces_
     aggregation: "{{ netbox_devices }}"
@@ -619,7 +603,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_virtual_disk
-    permission: virtualization.virtualdisk
+    type: virtualization.virtualdisk
     lookup: virtual-disks
     primary_key: name
     data: virtual_disks
@@ -641,7 +625,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_fhrp_group
-    permission: ipam.fhrpgroup
+    type: ipam.fhrpgroup
     lookup: fhrp-groups
     primary_key: group_id
     data: fhrp-groups
@@ -664,8 +648,23 @@ netbox_data_models:
       auth_key: ""
       name: ""
 
+  - name: netbox.netbox.netbox_fhrp_group_assignment
+    type: ipam.fhrpgroupassignment
+    lookup: fhrp-group-assignments
+    primary_key: group.group_id-interface.virtual_machine.name-interface.name
+    data: fhrp_group_assignments
+    var_prefix: netbox_fhrp_group_assignments_
+    aggregation: "{{ netbox_devices }}"
+      #    req_param:
+      #      label: label
+    opt_param:
+      fhrp_group: group.id
+      interface_id: interface_id
+      interface_type: interface_type
+      priority: priority
+
   - name: netbox.netbox.netbox_power_port
-    permission: dcim.powerport
+    type: dcim.powerport
     lookup: power-ports
     primary_key: device.name-name
     data: power_ports
@@ -687,7 +686,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_module_bay
-    permission: dcim.modulebay
+    type: dcim.modulebay
     lookup: module-bays
     primary_key: device.name-name
     data: module_bays
@@ -710,7 +709,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_module_type
-    permission: dcim.moduletype
+    type: dcim.moduletype
     lookup: module-types
     primary_key: model
     data: module_types
@@ -733,7 +732,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_module
-    permission: dcim.module
+    type: dcim.module
     lookup: modules
     primary_key: device.name-module_bay.name-module_type.model
     data: modules
@@ -762,7 +761,7 @@ netbox_data_models:
       status: "active"
 
   - name: netbox.netbox.netbox_console_port
-    permission: dcim.consoleport
+    type: dcim.consoleport
     lookup: console-ports
     primary_key: device.name-name
     data: console_ports
@@ -772,7 +771,7 @@ netbox_data_models:
       name: name
       device: device.name
     opt_param:
-      cable: cable
+      #     cable: cable
       custom_fields: custom_fields
       description: description
       label: label
@@ -789,7 +788,7 @@ netbox_data_models:
       mark_connected: false
 
   - name: netbox.netbox.netbox_console_server_port
-    permission: dcim.consoleserverport
+    type: dcim.consoleserverport
     lookup: console-server-ports
     primary_key: device.name-name
     data: console_server_ports
@@ -799,7 +798,7 @@ netbox_data_models:
       name: name
       device: device.name
     opt_param:
-      cable: cable
+      #      cable: cable
       custom_fields: custom_fields
       description: description
       label: label
@@ -815,7 +814,7 @@ netbox_data_models:
       mark_connected: false
 
   - name: netbox.netbox.netbox_vrf
-    permission: ipam.vrf
+    type: ipam.vrf
     lookup: vrfs
     primary_key: name
     data: vrfs
@@ -843,7 +842,7 @@ netbox_data_models:
       import_targets: []
 
   - name: netbox.netbox.netbox_ip_address
-    permission: ipam.ipaddress
+    type: ipam.ipaddress
     lookup: ip-addresses
     primary_key: address
     data: ip_addresses
@@ -877,7 +876,7 @@ netbox_data_models:
       dns_name: ""
 
   - name: netbox.netbox.netbox_prefix
-    permission: ipam.prefix
+    type: ipam.prefix
     lookup: prefixes
     primary_key: prefix
     data: prefixes
@@ -915,7 +914,7 @@ netbox_data_models:
         site: "{{ netbox_default_site }}"
 
   - name: netbox.netbox.netbox_vlan_group
-    permission: ipam.vlangroup
+    type: ipam.vlangroup
     lookup: vlan-groups
     primary_key: name
     data: vlan_groups
@@ -940,7 +939,7 @@ netbox_data_models:
       tags: []
 
   - name: netbox.netbox.netbox_vlan
-    permission: ipam.vlan
+    type: ipam.vlan
     lookup: vlans
     primary_key: name
     data: vlans
@@ -967,7 +966,7 @@ netbox_data_models:
       status: active
 
   - name: netbox.netbox.netbox_wireless_lan
-    permission: wireless.wirelesslan
+    type: wireless.wirelesslan
     lookup: wireless-lans
     primary_key: ssid
     data: wireless_lans
@@ -1000,7 +999,7 @@ netbox_data_models:
 
 # could not solve the device or virtual_machine name required problem/bug with netbox.netbox.netbox_service
   - name: "Services"
-    permission: ipam.service
+    type: ipam.service
     rest_path: /api/ipam/services/
       #    lookup: services
     primary_key: name-protocol.value-device.name
@@ -1027,7 +1026,7 @@ netbox_data_models:
       tags: []
 
   - name: "VM Services"
-    permission: ipam.service
+    type: ipam.service
     rest_path: /api/ipam/services/
       #    lookup: services
     primary_key: name-protocol.value-virtual_machine.name
@@ -1054,46 +1053,47 @@ netbox_data_models:
       tags: []
 
 
-# requires pynetbox 7.4.1
-#  - name: netbox.netbox.netbox_cable
-#    permission: dcim.cable
+# requires pynetbox 7.4.1 and still does not work for me netbox.netbox.netbox_cable
+  - name: "Cables"  
+    type: dcim.cable
+    rest_path: /api/dcim/cables/
 #    lookup: cables
-#    primary_key: a_terminations.list.device.name-a_terminations.list.name-b_terminations.list.device.name-b_terminations.list.name
-#    data: cables
-#    var_prefix: netbox_cables_
-#    aggregation: "{{ netbox_devices }}"
-#    req_param:
-#      termination_a: termination_a
-#        #        device: a_terminations.list.device.name
-#        #        name: a_terminations.list.name
-#          #      termination_a_type: termination_a_type
-#      termination_b: termination_b
-#        #        device: b_terminations.list.device.name
-#        #        name: b_terminations.list.name
-#          #      termination_b_type: termination_b_type
-#    opt_param:
-#      color: color
-#      comments: comments
-#      custom_fields: custom_fields
-#      description: description
-#      label: label
-#      length: length
-#      length_unit: length_unit.value
-#      status: status.value
-#      tags: tags
-#      tenant: tenant
-#      type: type
-#    default_param:
-#      comments: ""
-#      custom_fields: {}
-#      description: ""
-#      tags: []
-#      status: connected
-#
+    primary_key: label
+    data: cables
+    var_prefix: netbox_cables_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      label: label
+    opt_param:
+      a_terminations: 
+        - object_id: a_terminations.list.object_id
+          object_type: a_terminations.list.object_type
+      b_terminations:
+        - object_id: b_terminations.list.object_id
+          object_type: b_terminations.list.object_type
+      id: id
+      color: color
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      length: length
+      length_unit: length_unit.value
+      status: status.value
+      tags: tags
+      tenant: tenant
+      type: type
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      status: connected
+      color: "000000"
+
 
   - name: "Static Routes"
     rest_path: /api/plugins/routing/staticroute/
-    permission: netbox_routing.staticroute
+    type: netbox_routing.staticroute
     primary_key: prefix-next_hop
     data: static_routes
     var_prefix: netbox_static_routes_
@@ -1102,6 +1102,7 @@ netbox_data_models:
       prefix: prefix
       next_hop: next_hop
     opt_param:
+      id: id
       devices: devices.list.name
       name: name
       vrf: 
@@ -1118,7 +1119,7 @@ netbox_data_models:
 
   - name: "DNS Nameservers"
     rest_path: /api/plugins/netbox-dns/nameservers/
-    permission: netbox_dns.nameserver
+    type: netbox_dns.nameserver
     primary_key: name
     data: dns_nameservers
     var_prefix: netbox_dns_nameservers_
@@ -1138,7 +1139,7 @@ netbox_data_models:
 
   - name: "DNS Zones"
     rest_path: /api/plugins/netbox-dns/zones/
-    permission: netbox_dns.zone
+    type: netbox_dns.zone
     primary_key: name
     data: dns_zones
     var_prefix: netbox_dns_zones_
@@ -1174,7 +1175,7 @@ netbox_data_models:
 
   - name: "DNS Records"
     rest_path: /api/plugins/netbox-dns/records/
-    permission: netbox_dns.record
+    type: netbox_dns.record
     primary_key: name
     data: dns_records
     var_prefix: netbox_dns_records_
