@@ -172,36 +172,9 @@
       - 'yaml'
       - 'yml'
   tags:
-   - device
+   - netbox_setup
  
 # For the moment I only need {{ netbox_data_dir }}/global_vars.yml
-- name: Get list of permissions
-  ansible.builtin.set_fact:
-    netbox_permission_list: |
-      {% set output = [] %}
-      {% for ndm in netbox_data_models %}
-      {% if ndm.permission is string %}
-      {% set _ = output.append(ndm.permission) %}
-      {% else %}
-      {% for ndml in ndm.permission %}
-      {% set _ = output.append(ndml) %}
-      {% endfor %}
-      {% endif %}
-      {% endfor %}
-      {{ output }}
-      #  tags:
-      #    - device
-
-- name: netbox_permission_list
-  ansible.builtin.debug:
-    var: netbox_permission_list
-      #  tags:
-      #    - device
-
-- meta: end_play
-  #  tags:
-  #    - device
-
 - name: Create permission with all parameters
   netbox.netbox.netbox_permission:
     netbox_url: "http://{{ netbox_loadbalancer_ip }}"
@@ -232,20 +205,8 @@
     state: present
   tags:
     - netbox_setup
-    - cluster
-    - cluster_type
-    - module
-    - contact
-    - customfield
-    - vrf
-    - routes
-    - dns
-    - cables
-    - device_interfaces
-    - mac
-    - wlan
-    - device
 
+# Currently missing, may be added later:
       #        #        - dcim.frontport
       #        #        - dcim.rearport
       #          #        - wireless.wirelesslink
@@ -253,7 +214,6 @@
       #          #        - dcim.region
       #          #        - dcim.sitegroup
       #          #        - dcim.rack
-      #          #        - ipam.service
       #          #        - extras.customlink
 
 - name: Create user for Ansible
@@ -270,7 +230,8 @@
       username: "{{ netbox_ansible_user }}"
       password: "{{ netbox_ansible_password }}"
     state: present
-  tags: netbox_setup
+  tags: 
+    - netbox_setup
 
 - name: Create token within NetBox with only required information
   netbox.netbox.netbox_token:
@@ -281,29 +242,10 @@
       user: "{{ netbox_ansible_user }}"
       key: "{{ netbox_ansible_token }}"
     state: present
-  tags: netbox_setup
-          
-- name: Setup data in Netbox
-  include_tasks: setup_netbox_dynamic.yml
-    #  include_tasks: setup_netbox.yml
   tags: 
     - netbox_setup
-    - device_interfaces
-    - cables
-    - cluster_type
-    - cluster_group
-    - cluster
-    - module
-    - contact
-    - customfield
-    - vm_interfaces
-    - address
-    - device
-    - fhrp
-    - vrf
-    - routes
-    - dns
-    - mac
-    - wlan
-    - prefixes
-    - vlan
+          
+- name: Setup data in Netbox
+  include_tasks: setup_netbox.yml
+  tags: 
+    - netbox_setup
