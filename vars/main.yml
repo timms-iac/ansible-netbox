@@ -237,6 +237,49 @@ netbox_data_models:
       facility: ""
       site: "{{ netbox_default_site }}"
 
+  - name: netbox.netbox.netbox_rir
+    type: ipam.rir
+    lookup: rirs
+    primary_key: name
+    data: rirs
+    var_prefix: netbox_rirs_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      is_private: is_private
+      slug: slug
+      tags: tags
+    default_param:
+      description: ""
+      tags: []
+      custom_fields: {}
+
+  - name: netbox.netbox.netbox_aggregate
+    type: ipam.aggregate
+    lookup: aggregates
+    primary_key: prefix
+    data: aggregates
+    var_prefix: netbox_aggregates_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      prefix: prefix
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      date_added: date_added
+      description: description
+      rir: rir.slug
+      tags: tags
+      tenant: tenant
+    default_param:
+      comments: ""
+      description: ""
+      tags: []
+      custom_fields: {}
+
   - name: netbox.netbox.netbox_device_role
     type: dcim.devicerole
     lookup: device-roles
