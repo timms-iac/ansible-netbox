@@ -13,7 +13,7 @@ netbox_superuser_email: admin@example.com
 netbox_superuser_api_token: 0123456789abcdef0123456789abcdef01234567
 netbox_secret_key: django-secret
 netbox_storage_class: local-path
-netbox_loadbalancer_ip: 172.25.0.202
+netbox_loadbalancer_ip: 10.0.0.1
 netbox_loadbalancer_class: kube-vip.io/kube-vip-class
 netbox_ansible_user: ansible
 netbox_ansible_password: ansible

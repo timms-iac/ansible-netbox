@@ -651,7 +651,7 @@ netbox_data_models:
   - name: netbox.netbox.netbox_fhrp_group_assignment
     type: ipam.fhrpgroupassignment
     lookup: fhrp-group-assignments
-    primary_key: group.group_id-interface.virtual_machine.name-interface.name
+    primary_key: group.group_id-interface.device.name-interface.virtual_machine.name-interface.name
     data: fhrp_group_assignments
     var_prefix: netbox_fhrp_group_assignments_
     aggregation: "{{ netbox_devices }}"
@@ -855,6 +855,8 @@ netbox_data_models:
         device: assigned_object.device.name
         name: assigned_object.name
         virtual_machine: assigned_object.virtual_machine.name
+      assigned_object_id: assigned_object_id
+      assigned_object_type: assigned_object_type
       comments: comments
       custom_fields: custom_fields
       description: description
@@ -862,7 +864,7 @@ netbox_data_models:
       interface: interface
       nat_inside: nat_inside
       prefix: prefix
-      role: role
+      role: role.label
       status: status.value
       tags: tags
       tenant: tenant

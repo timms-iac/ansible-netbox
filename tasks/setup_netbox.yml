@@ -20,7 +20,7 @@
         - never
         - netbox_debug
 
-    - name: Aggregate Variables
+    - name: Aggregate Variables (Get all data from NetBox)
       ansible.builtin.set_fact: 
         netbox_data_raw: | 
           {% set data = {} %}
@@ -136,10 +136,10 @@
           {% elif item.opt_param[op] is string %}{# mapping #}
           {% set params = item.opt_param[op].split(".") %}
           {% if qr.value[params[0]] is defined and qr.value[params[0]] is not none %}
-          {% if params | length > 1 and params[1] == "list" and qr.value[params[0]] is defined and qr.value[params[0]] is iterable and qr.value[params[0]] | length > 0 %}
+          {% if params | length > 1 and params[1] == "list" and qr.value[params[0]] is iterable and qr.value[params[0]] | length > 0 %}
           {% set tmp = [] %}
           {% for i in qr.value[params[0]] %}
-          {% if params[2] == "id" %}
+          {% if params[2] == "id" %}{# services: ipaddresses.list.id #}
           {% set _ = tmp.append(i[params[2]]) %}
           {% elif params[0] == "nameservers" or params[0] == "zones" or item.data == "static_routes" %}
           {% set _ = tmp.append({ params[2]: i[params[2]] }) %}
@@ -147,7 +147,11 @@
           {% set _ = tmp.append({ params[2]: i[params[2]], "site": netbox_default_site }) %}
           {% endif %}
           {% endfor %}{# i #}
+          {% if params[2] == "id" %}
+          {% set _ = output[primary_key].update({ op: tmp | sort }) %}
+          {% else %}
           {% set _ = output[primary_key].update({ op: tmp | sort(attribute=params[2])}) %}
+          {% endif %}
           {% elif params | length > 1 and op == "untagged_vlan" %}
           {% set _ = output[primary_key].update( { op: { param[1]: qr.value[params[0]][params[1]], "site": netbox_default_site} } ) %}
           {% elif params | length > 1 and params[1] != "list" %}
@@ -295,6 +299,23 @@
           {% endif %}
           {% set _ = output[out].append(ip) %}
           {% endfor %}{# ip #}
+          {# #### services #### #}
+          {% elif out == "services" and netbox_data_raw[out] is defined %}
+          {% for svc in netbox_data_raw[out] %}
+          {% if svc.ipaddresses is defined %}
+          {% set ip_addr_ids = [] %}
+          {% for addr in svc.ipaddresses %}
+          {% if addr | int %}
+          {% set _ = ip_addr_ids.append(addr) %}
+          {% else %}
+          {% set tmp = query("netbox.netbox.nb_lookup", "ip-addresses", api_filter="address=" + addr | string, api_endpoint=ansible_nb_url, token=netbox_ansible_token) | map(attribute="key") | join(",") %}
+          {% set _ = ip_addr_ids.append(tmp | int ) %}
+          {% endif %}
+          {% endfor %}
+          {% set _ = svc.update({"ipaddresses": ip_addr_ids | sort }) %}
+          {% endif %}
+          {% set _ = output[out].append(svc) %}
+          {% endfor %}
           {# ### copy data ### #}
           {% else %}{# out #}
           {% set _ = output.update({ out: netbox_data_raw[out] }) %}
