@@ -6,6 +6,18 @@
 #        var: query("netbox.netbox.nb_lookup", "interfaces", api_filter="name=MGI2 device=sodola01", api_endpoint=ansible_nb_url, token=netbox_ansible_token) | map(attribute="key") | join(",")
 #      tags:
 #        - netbox_setup
+#
+#    - name: "Sample vlan_set variable validation"
+#      ansible.builtin.debug:
+#        var: netbox_vlan_set_uplink_sodola_BER1
+#      tags:
+#        - never
+#        - netbox_debug
+#    
+#    - ansible.builtin.meta: end_play
+#      tags:
+#        - never
+#        - netbox_debug
 
     - name: "Token for DNS Nameservers"
       ansible.builtin.set_fact:
