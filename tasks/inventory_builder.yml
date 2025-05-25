@@ -1,0 +1,105 @@
+---
+# https://www.bitsinflight.com/ansible-inventory-from-netbox-using-graphql/
+    - name: GraphQL Query to grab devices
+      uri:
+        url: "http://{{ netbox_loadbalancer_ip }}/graphql/"
+        validate_certs: no
+        method: POST
+        headers:
+          Authorization: "Token {{ netbox_ansible_token }}"
+        body_format: json
+        body:
+          query: "{
+  site_list {
+    name
+    devices {
+      name
+      status
+      primary_ip4 {
+        address
+        dns_name
+      }
+      platform {
+        slug
+      }
+     role {
+       slug
+     }
+     cluster {
+       name
+     }
+    }
+    virtual_machines {
+      name
+      status
+      primary_ip4 {
+        address
+        dns_name
+      }
+      platform {
+        slug
+      }
+      role {
+        slug
+      }
+      cluster {
+        name
+      }
+    }
+  }
+}"
+      register: nb_device_list
+
+    - name: Set Netbox Device List Variable
+      set_fact:
+        nb_device_list: |
+          {% set output =  { "all": { "children": {} } } %}
+          {% set sites = nb_device_list.json.data.site_list %}
+          {% for site in sites %}
+          {% set _ = output["all"]["children"].update({ site.name: { "children": {}}}) %}
+          {% set _ = output["all"]["children"][site.name]["children"].update({ "devices": { "hosts": {}}}) %}
+          {% set _ = output["all"]["children"][site.name]["children"].update({ "platforms": {"children": {}}}) %}
+          {% set _ = output["all"]["children"][site.name]["children"].update({ "roles": {"children": {}}}) %}
+          {% set _ = output["all"]["children"][site.name]["children"].update({ "clusters": {"children": {}}}) %}
+          {% for device in site.devices %}
+          {% if device.name is defined and device.status == "active" and device.primary_ip4.address is defined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["devices"]["hosts"].update({ device.name: { "ansible_host": device.primary_ip4.address | split("/") | first }}) %}
+          {% set _ = output["all"]["children"][site.name]["children"]["devices"]["hosts"][device.name].update({ "dns_name": device.primary_ip4.dns_name }) if device.primary_ip4.dns_name is defined %}
+          {% if device.platform.slug is defined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["devices"]["hosts"][device.name].update({ "platform": device.platform.slug }) %}
+          {% set _ = output["all"]["children"][site.name]["children"]["platforms"]["children"].update({ device.platform.slug: {"hosts": {}}}) if  output["all"]["children"][site.name]["children"]["platforms"]["children"][device.platform.slug]["hosts"] is undefined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["platforms"]["children"][device.platform.slug]["hosts"].update({ device.name: { "ansible_host": device.primary_ip4.address | split("/") | first }}) %}
+          {% endif %}
+          {% if device.role.slug is defined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["devices"]["hosts"][device.name].update({ "role": device.role.slug }) %}
+          {% set _ = output["all"]["children"][site.name]["children"]["roles"]["children"].update({ device.role.slug: {"hosts": {}}}) if  output["all"]["children"][site.name]["children"]["roles"]["children"][device.role.slug]["hosts"] is undefined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["roles"]["children"][device.role.slug]["hosts"].update({ device.name: { "ansible_host": device.primary_ip4.address | split("/") | first }}) %}
+          {% endif %}
+          {% if device.cluster.name is defined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["devices"]["hosts"][device.name].update({ "cluster": device.cluster.name }) %}
+          {% set _ = output["all"]["children"][site.name]["children"]["clusters"]["children"].update({ device.cluster.name: {"hosts": {}}}) if  output["all"]["children"][site.name]["children"]["clusters"]["children"][device.cluster.name]["hosts"] is undefined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["clusters"]["children"][device.cluster.name]["hosts"].update({ device.name: { "ansible_host": device.primary_ip4.address | split("/") | first }}) %}
+          {% endif %}
+          {% endif %}
+          {% endfor %}{# device #}
+          {% set _ = output["all"]["children"][site.name]["children"].update({ "virtual_machines": { "hosts": {}}}) %}
+          {% for vm in site.virtual_machines %}
+          {% if vm.name is defined and vm.status == "active" and vm.primary_ip4.address is defined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["virtual_machines"]["hosts"].update({ vm.name: { "ansible_host": vm.primary_ip4.address | split("/") | first }}) %}
+          {% set _ = output["all"]["children"][site.name]["children"]["virtual_machines"]["hosts"][vm.name].update({ "platform": vm.platform.slug }) if vm.platform.slug is defined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["virtual_machines"]["hosts"][vm.name].update({ "role": vm.role.slug }) if vm.role.slug is defined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["virtual_machines"]["hosts"][vm.name].update({ "cluster": vm.cluster.name }) if vm.cluster.name is defined %}
+          {% set _ = output["all"]["children"][site.name]["children"]["virtual_machines"]["hosts"][vm.name].update({ "dns_name": vm.primary_ip4.dns_name }) if vm.primary_ip4.dns_name is defined %}
+          {% endif %}
+          {% endfor %}{# vm #}
+          {% endfor %}{# site #}
+          {{ output }}
+
+          #    - name: Debug
+          #      debug:
+          #        var: nb_device_list
+
+    - name: Generate inventory.yml file
+      copy:
+        content: "# Managed by Ansible role NetBox\n{{ nb_device_list | to_nice_yaml }}"
+        dest: "{{ inventory_dir }}/inventory.yml"

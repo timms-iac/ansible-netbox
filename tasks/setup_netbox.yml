@@ -312,7 +312,7 @@
           {% set _ = output[out].append(ip) %}
           {% endfor %}{# ip #}
           {# #### services #### #}
-          {% elif out == "services" and netbox_data_raw[out] is defined %}
+          {% elif (out == "services" or out == "vm_services") and netbox_data_raw[out] is defined %}
           {% for svc in netbox_data_raw[out] %}
           {% if svc.ipaddresses is defined %}
           {% set ip_addr_ids = [] %}

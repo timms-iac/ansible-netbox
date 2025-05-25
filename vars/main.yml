@@ -409,7 +409,7 @@ netbox_data_models:
       site: site.name
       status: status.value
       tags: tags
-      tenant: tenant
+      tenant: tenant.slug
       vc_position: vc_position
       vc_priority: vc_priority
       virtual_chassis: virtual_chassis
@@ -462,7 +462,7 @@ netbox_data_models:
       poe_mode: poe_mode
       poe_type: poe_type
       primary_mac_address: mac_address
-      speed: speed
+      speed: speed.value
       tagged_vlans: tagged_vlans.list.name
       tags: tags
       tx_power: tx_power
@@ -592,8 +592,8 @@ netbox_data_models:
       local_context_data: local_context_data
       memory: memory
       platform: platform.slug
-      primary_ip4: primary_ip4
-      primary_ip6: primary_ip6
+      primary_ip4: primary_ip4.address
+      primary_ip6: primary_ip6.address
       serial: serial
       site: site.name
       status: status.value

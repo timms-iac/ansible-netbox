@@ -171,9 +171,17 @@
     extensions:
       - 'yaml'
       - 'yml'
+    ignore_files: 
+      - secrets.sops.yml
   tags:
    - netbox_setup
- 
+
+- name: "Include secrets from {{ netbox_data_dir }}"
+  community.sops.load_vars:
+    file: "{{ netbox_data_dir }}/secrets.sops.yml"
+  tags:
+   - netbox_setup
+
 # For the moment I only need {{ netbox_data_dir }}/global_vars.yml
 - name: Create permission with all parameters
   netbox.netbox.netbox_permission:
@@ -248,4 +256,36 @@
 - name: Setup data in Netbox
   include_tasks: setup_netbox.yml
   tags: 
+    - netbox_setup
+
+- name: Build inventory.yml from Netbox
+  include_tasks: 
+    file: inventory_builder.yml
+    apply:
+      tags:
+        - netbox_setup
+  tags:
+    - netbox_setup
+
+- name: Create read-only token within NetBox
+  netbox.netbox.netbox_token:
+    netbox_url: "http://{{ netbox_loadbalancer_ip }}"
+    netbox_token: "{{ netbox_superuser_api_token }}"
+    validate_certs: false
+    data:
+      user: "{{ netbox_ansible_user }}"
+      key: "{{ netbox_ansible_ro_token }}"
+      write_enabled: false
+    state: present
+  tags:
+    - netbox_setup
+
+- name: Write group_vars/all.yml
+  copy:
+    dest: "{{ inventory_dir }}/group_vars/all.yml"
+    content: |
+      # Managed by Ansible role NetBox
+      ansible_nb_url: "http://{{ netbox_loadbalancer_ip }}"
+      ansible_nb_token: "{{ netbox_ansible_ro_token }}"
+  tags:
     - netbox_setup
