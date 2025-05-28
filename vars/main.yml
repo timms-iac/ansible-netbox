@@ -392,7 +392,14 @@ netbox_data_models:
       cluster: cluster.name
       comments: comments
       config_template: config_template
-      custom_fields: custom_fields
+      custom_fields: 
+        ManagementHostIP: custom_fields.ManagementHostIP.id
+        Firmware: custom_fields.Firmware
+        NetworkVersion: custom_fields.NetworkVersion
+        webmanagement: custom_fields.webmanagement
+        SupplierOrder: custom_fields.SupplierOrder
+        SupplierWebpage: custom_fields.SupplierWebpage
+        OpenVSwitchProtocols: custom_fields.OpenVSwitchProtocols
       description: description
       device_role: role.name
       device_type: device_type.slug
@@ -427,6 +434,7 @@ netbox_data_models:
         SupplierWebpage: null
         OpenVSwitchProtocols:
           - none
+        ManagementHostIP: null
       site: "{{ netbox_default_site }}"
 
   - name: netbox.netbox.netbox_device_interface
@@ -1066,7 +1074,10 @@ netbox_data_models:
       id: id
     default_param:
       comments: ""
-      custom_fields: {}
+      custom_fields:
+        Directory: null
+        Options: null
+        User: null
       description: ""
       tags: []
 
@@ -1093,7 +1104,10 @@ netbox_data_models:
       id: id
     default_param:
       comments: ""
-      custom_fields: {}
+      custom_fields:
+        Directory: null
+        Options: null
+        User: null
       description: ""
       tags: []
 

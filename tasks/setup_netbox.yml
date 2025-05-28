@@ -133,7 +133,7 @@
           {% if output[primary_key][op] is undefined %}
           {% set _ = output[primary_key].update( { op: {} } ) %}
           {% endif %}
-          {% if params | length > 2 %}
+          {% if params | length > 2 and qr.value[params[0]][params[1]] is mapping %}
           {% set _ = output[primary_key][op].update( { opm: qr.value[params[0]][params[1]][params[2]] } ) %}
           {% else %}{# if params | length > 2 #}
           {% set _ = output[primary_key][op].update( { opm: qr.value[params[0]][params[1]] } ) %}
@@ -327,6 +327,15 @@
           {% set _ = svc.update({"ipaddresses": ip_addr_ids | sort }) %}
           {% endif %}
           {% set _ = output[out].append(svc) %}
+          {% endfor %}
+          {# #### devices #### #}
+          {% elif out == "devices" and netbox_data_raw[out] is defined %}
+          {% for dev in netbox_data_raw[out] %}
+          {% if dev.custom_fields.ManagementHostIP is string and dev.custom_fields.ManagementHostIP | length > 0 %}
+          {% set tmp = query("netbox.netbox.nb_lookup", "ip-addresses", api_filter="address=" + dev.custom_fields.ManagementHostIP | string, api_endpoint=ansible_nb_url, token=netbox_ansible_token) | map(attribute="key") | join(",") %}
+          {% set _ = dev.custom_fields.update({"ManagementHostIP": tmp | int }) %}
+          {% endif %}
+          {% set _ = output[out].append(dev) %}
           {% endfor %}
           {# ### copy data ### #}
           {% else %}{# out #}
