@@ -345,6 +345,58 @@ netbox_data_models:
       tags: []
       custom_fields: {}
 
+  - name: netbox.netbox.netbox_vlan_group
+    type: ipam.vlangroup
+    lookup: vlan-groups
+    primary_key: name
+    data: vlan_groups
+    var_prefix: netbox_vlan_groups_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      custom_fields: custom_fields
+      description: description
+      max_vid: max_vid
+      min_vid: min_vid
+      scope: scope.name
+      scope_type: scope_type
+      site: site.name
+      slug: slug
+      tags: tags
+      vid_ranges: vid_ranges
+    default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_vlan
+    type: ipam.vlan
+    lookup: vlans
+    primary_key: name
+    data: vlans
+    var_prefix: netbox_vlans_
+    aggregation: "{{ netbox_sites }}"
+    req_param:
+      name: name
+    opt_param:
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      site: site.name
+      status: status.value
+      tags: tags
+      tenant: tenant
+      vid: vid
+      vlan_group: group.name
+      vlan_role: role
+    default_param:
+      comments: ""
+      custom_fields: {}
+      description: ""
+      tags: []
+      status: active
+
   - name: netbox.netbox.netbox_device_type
     type: dcim.devicetype
     lookup: device-types
@@ -453,6 +505,7 @@ netbox_data_models:
       custom_fields: 
         EEE: custom_fields.EEE
         LLDP: custom_fields.LLDP
+        VFs: custom_fields.VFs
       description: description
       device: device.name
       duplex: duplex.value
@@ -490,29 +543,7 @@ netbox_data_models:
       custom_fields:
         EEE: false
         LLDP: false
-
-  - name: netbox.netbox.netbox_mac_address
-    type: dcim.macaddress
-    lookup: mac
-    primary_key: mac_address
-    data: mac_addresses
-    var_prefix: netbox_mac_addresses_
-    aggregation: "{{ netbox_devices }}"
-    req_param:
-      mac_address: mac_address
-    opt_param:
-      assigned_object: 
-        device: assigned_object.device.name
-        name: assigned_object.name
-      comments: comments
-      custom_fields: custom_fields
-      description: description
-      tags: tags
-    default_param:
-      comments: ""
-      custom_fields: {}
-      description: ""
-      tags: []
+        VFs: 0
 
   - name: netbox.netbox.netbox_cluster_type
     type: virtualization.clustertype
@@ -630,7 +661,8 @@ netbox_data_models:
     req_param:
       name: name
     opt_param:
-      custom_fields: custom_fields 
+      custom_fields: 
+        HostInterface: custom_fields.HostInterface.id 
       description: description
       enabled: enabled
       mac_address: mac_address
@@ -648,7 +680,6 @@ netbox_data_models:
         device: bridge.device.name
       vrf: vrf.name
     default_param:
-      custom_fields: {}
       description: ""
       enabled: true
       tags: []
@@ -667,10 +698,32 @@ netbox_data_models:
       description: description
       size: size
       tags: tags
-      untagged_vlan: 
-        name: untagged_vlan.name
       virtual_machine: virtual_machine.name
     default_param:
+      custom_fields: {}
+      description: ""
+      tags: []
+
+  - name: netbox.netbox.netbox_mac_address
+    type: dcim.macaddress
+    lookup: mac
+    primary_key: mac_address
+    data: mac_addresses
+    var_prefix: netbox_mac_addresses_
+    aggregation: "{{ netbox_devices }}"
+    req_param:
+      mac_address: mac_address
+    opt_param:
+      assigned_object:
+        device: assigned_object.device.name
+        name: assigned_object.name
+        virtual_machine: assigned_object.virtual_machine.name
+      comments: comments
+      custom_fields: custom_fields
+      description: description
+      tags: tags
+    default_param:
+      comments: ""
       custom_fields: {}
       description: ""
       tags: []
@@ -965,58 +1018,6 @@ netbox_data_models:
       family: 4
       vlan:
         site: "{{ netbox_default_site }}"
-
-  - name: netbox.netbox.netbox_vlan_group
-    type: ipam.vlangroup
-    lookup: vlan-groups
-    primary_key: name
-    data: vlan_groups
-    var_prefix: netbox_vlan_groups_
-    aggregation: "{{ netbox_sites }}"
-    req_param:
-      name: name
-    opt_param:
-      custom_fields: custom_fields
-      description: description
-      max_vid: max_vid
-      min_vid: min_vid
-      scope: scope.name
-      scope_type: scope_type
-      site: site.name
-      slug: slug
-      tags: tags
-      vid_ranges: vid_ranges
-    default_param:
-      custom_fields: {}
-      description: ""
-      tags: []
-
-  - name: netbox.netbox.netbox_vlan
-    type: ipam.vlan
-    lookup: vlans
-    primary_key: name
-    data: vlans
-    var_prefix: netbox_vlans_
-    aggregation: "{{ netbox_sites }}"
-    req_param:
-      name: name
-    opt_param:
-      comments: comments
-      custom_fields: custom_fields
-      description: description
-      site: site.name
-      status: status.value
-      tags: tags
-      tenant: tenant
-      vid: vid
-      vlan_group: group.name
-      vlan_role: role
-    default_param:
-      comments: ""
-      custom_fields: {}
-      description: ""
-      tags: []
-      status: active
 
   - name: netbox.netbox.netbox_wireless_lan
     type: wireless.wirelesslan

@@ -337,6 +337,15 @@
           {% endif %}
           {% set _ = output[out].append(dev) %}
           {% endfor %}
+          {# #### vm_interfaces #### #}
+          {% elif out == "vm_interfaces" and netbox_data_raw[out] is defined %}
+          {% for dev in netbox_data_raw[out] %}
+          {% if dev.custom_fields.HostInterface is defined %}
+          {% set tmp = query("netbox.netbox.nb_lookup", "interfaces", api_filter="name=" + dev.custom_fields.HostInterface.name + " device=" + dev.custom_fields.HostInterface.device, api_endpoint=ansible_nb_url, token=netbox_ansible_token) | map(attribute="key") | join(",") %}
+          {% set _ = dev.custom_fields.update({"HostInterface": tmp | int }) %}
+          {% endif %}
+          {% set _ = output[out].append(dev) %}
+          {% endfor %}
           {# ### copy data ### #}
           {% else %}{# out #}
           {% set _ = output.update({ out: netbox_data_raw[out] }) %}
@@ -537,10 +546,10 @@
         netbox_data_hash: |
           {% set output = netbox_data_hash %}
           {% for nni in netbox_new_items %}
-          {% if nni.key == "devices" and netbox_data_hash[nni.key][nni.value].primary_ip4 is defined %}
+          {% if (nni.key == "devices" or nni.key == "virtual_machines") and netbox_data_hash[nni.key][nni.value].primary_ip4 is defined %}
           {% set _ = output[nni.key][nni.value].pop('primary_ip4') %}
           {% endif %}
-          {% if nni.key == "device_interfaces" and netbox_data_hash[nni.key][nni.value].primary_mac_address is defined %}
+          {% if (nni.key == "device_interfaces" or nni.key == "vm_interfaces") and netbox_data_hash[nni.key][nni.value].primary_mac_address is defined %}
           {% set _ = output[nni.key][nni.value].pop('primary_mac_address') %}
           {% endif %}
           {% if nni.key == "ip_addresses" and netbox_data_hash[nni.key][nni.value].assigned_object_id is defined and netbox_data_hash[nni.key][nni.value].assigned_object is defined %}
